@@ -129,6 +129,11 @@ textarea{min-height:60px}
 .emr{border:1px solid var(--line);padding:9px;margin:8px 0;background:#0a0a0a}
 .emr .k{color:var(--dim);font-size:10px;letter-spacing:.08em}.emr .n{font-size:14px;margin:2px 0}.emr .d{color:#fff;font-weight:600;font-size:12px;margin-bottom:6px}
 a.b{text-decoration:none;display:inline-block}
+.tcard{position:relative;padding-right:52px}
+.dots{position:absolute;top:6px;right:6px;width:40px;height:40px;background:none;border:0;color:#fff;font-size:24px;line-height:1;border-radius:8px}
+.dots:active{background:#1b2210}
+.mi{display:block;width:100%;text-align:left;padding:14px 4px;background:none;border:0;border-bottom:1px solid var(--line);color:var(--txt);font-size:15px}
+.mi.red{color:#ff7a66}
 .maplibregl-ctrl-attrib{font-size:9px!important}
 .maplibregl-ctrl-bottom-left{bottom:calc(100px + env(safe-area-inset-bottom))}
 </style></head><body>
@@ -489,9 +494,12 @@ function sosCopy(){navigator.clipboard&&navigator.clipboard.writeText(window._so
 // ================= TRILHAS (lista, briefing, relatório) =================
 function renderTrails(){
  $('#tlist').innerHTML=S.trails.map(t=>{const objs=t.pts.filter(p=>p.type==='obj').length,last=t.tracks[t.tracks.length-1];
-  return `<div class="card ${t.id===S.cur?'cur':''}"><h2>${esc(t.name)}${t.id===S.cur?' <span style="color:var(--amber);font-size:10px;letter-spacing:.1em">● NO MAPA</span>':''}</h2><div class="meta">${t.pts.length} pontos · ${objs} objetivos · ${fmtD(trailLen(t))} · ${t.hz.length} marcas${last?' · última: '+new Date(last.start).toLocaleDateString('pt-BR'):' · nunca feita'}</div>
+  return `<div class="card tcard ${t.id===S.cur?'cur':''}"><button class="dots" aria-label="Mais opções" onclick="trailMenu('${t.id}')">⋮</button><h2>${esc(t.name)}${t.id===S.cur?' <span style="color:var(--amber);font-size:10px;letter-spacing:.1em">● NO MAPA</span>':''}</h2><div class="meta">${t.pts.length} pontos · ${objs} objetivos · ${fmtD(trailLen(t))} · ${t.hz.length} marcas${last?' · última: '+new Date(last.start).toLocaleDateString('pt-BR'):' · nunca feita'}</div>
   ${t.desc?`<p>${esc(t.desc)}</p>`:''}
-  <div class="row"><button class="b pri sm" onclick="openT('${t.id}','mapa');setTimeout(fit,400)">ABRIR NO MAPA</button><button class="b sm" onclick="brief('${t.id}')">BRIEFING</button><button class="b sm" onclick="openT('${t.id}','editar')">EDITAR</button><button class="b sm" onclick="exportGpx('${t.id}',0)">GPX</button><button class="b sm" onclick="exportGpx('${t.id}',1)">ENVIAR</button><button class="b sm" onclick="report('${t.id}')">RELATÓRIO</button><button class="b sm" onclick="renameT('${t.id}')">RENOMEAR</button><button class="b sm" onclick="resetRun('${t.id}')">ZERAR</button><button class="b red sm" onclick="delTrail('${t.id}')">APAGAR</button></div></div>`}).join('')||'<p style="color:var(--dim)">Nenhuma trilha. Crie a primeira.</p>'}
+  <div class="row"><button class="b pri sm" onclick="openT('${t.id}','mapa');setTimeout(fit,400)">ABRIR NO MAPA</button></div></div>`}).join('')||'<p style="color:var(--dim)">Nenhuma trilha. Crie a primeira.</p>'}
+function trailMenu(id){const t=S.trails.find(x=>x.id===id);
+ const it=(l,f,c='')=>`<button class="mi ${c}" onclick="closeModal();${f}">${l}</button>`;
+ modal(`<h2>${esc(t.name)}</h2>${it('Briefing da missão',`brief('${id}')`)}${it('Editar trilha',`openT('${id}','editar')`)}${it('Exportar GPX (Garmin)',`exportGpx('${id}',0)`)}${it('Enviar trilha',`exportGpx('${id}',1)`)}${it('Relatório das gravações',`report('${id}')`)}${it('Renomear',`renameT('${id}')`)}${it('Zerar progresso',`resetRun('${id}')`)}${it('Apagar trilha',`delTrail('${id}')`,'red')}<div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
 function openT(id,to){S.cur=id;save();hist=[];warned.clear();go(to)}
 function newTrailFlow(){const name=prompt('Nome da trilha:');if(!name){return go('trilhas')}
  const t=newTrail(name.trim(),'');S.trails.push(t);S.cur=t.id;save();go('editar');toast('Marque o INÍCIO e depois os pontos','warn')}
