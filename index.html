@@ -112,6 +112,22 @@ textarea{min-height:60px}
 .hz{width:24px;height:24px;transform:scale(var(--s));display:grid;place-items:center;font:700 13px monospace;border:2px solid;background:#0b0f0a;border-radius:3px}
 .hz.danger{color:#ff7a66;border-color:var(--red)}.hz.water{color:var(--cy);border-color:var(--cy)}.hz.shelter{color:var(--ok);border-color:var(--ok)}.hz.exit{color:#fff;border-color:#fff}
 .me{width:18px;height:18px;border-radius:50%;background:var(--cy);border:3px solid #fff;box-shadow:0 0 0 8px rgba(76,201,255,.25)}
+.sec{margin:22px 0 4px;padding-bottom:6px;color:var(--amber);letter-spacing:.25em;font-size:11px;border-bottom:1px solid var(--amber)}
+.set{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 0;border-bottom:1px dashed var(--line)}
+.set.col{flex-direction:column;align-items:stretch;gap:8px}
+.set b{display:block;font-size:14px;color:var(--txt);font-weight:600}
+.set small{display:block;color:var(--dim);font-size:11px;line-height:1.45;margin-top:3px}
+.set .ctl{display:flex;align-items:center;gap:6px;flex:none}
+.set .ctl input{width:72px;text-align:center}.set .ctl select{width:auto}
+.set .row{margin:0}
+.step{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--line);font-size:13px;line-height:1.5}
+.step i{flex:none;width:24px;height:24px;border:1px solid var(--amber);color:var(--amber);display:grid;place-items:center;font-style:normal;font-size:12px;transform:rotate(45deg)}
+.step i span{transform:rotate(-45deg)}
+.step small{display:block;color:var(--dim);font-size:11px}
+.hz.hosp{color:#fff;border-color:#fff;background:#8a1c10}.hz.venom{border-color:var(--ok);background:#16240f}
+.emr{border:1px solid var(--line);padding:9px;margin:8px 0;background:#0d130c}
+.emr .k{color:var(--dim);font-size:10px;letter-spacing:.15em}.emr .n{font-size:14px;margin:2px 0}.emr .d{color:var(--amber);font-size:12px;margin-bottom:6px}
+a.b{text-decoration:none;display:inline-block}
 .maplibregl-ctrl-attrib{font-size:9px!important}
 .maplibregl-ctrl-bottom-left{bottom:calc(100px + env(safe-area-inset-bottom))}
 </style></head><body>
@@ -133,7 +149,7 @@ textarea{min-height:60px}
   <div class="hint" id="ehint">Escolha o que marcar e toque no mapa. Toque num ponto para editar; arraste para mover.</div>
   <button data-t="start">▶ INÍCIO</button><button data-t="wp">◆ PONTO</button><button data-t="obj">★ OBJETIVO</button><button data-t="end">■ FIM</button>
   <button data-t="water">≈ ÁGUA</button><button data-t="danger">! PERIGO</button><button data-t="shelter">⌂ ABRIGO</button><button data-t="exit">⇥ SAÍDA</button>
-  <button id="ehere">◎ MINHA POSIÇÃO</button><button id="eundo">↶ DESFAZER</button>
+  <button id="ehosp">✚ HOSPITAIS</button><button id="ehere">◎ MINHA POSIÇÃO</button><button id="eundo">↶ DESFAZER</button>
 </div>
 
 <div id="sheet" class="hud">
@@ -151,22 +167,29 @@ textarea{min-height:60px}
 </div>
 <div class="view" id="vAjustes">
   <h1>▌AJUSTES</h1>
-  <div class="card"><h2>NAVEGAÇÃO</h2>
-    <label>RAIO PARA BATER O PONTO (METROS)</label><input type="number" id="cRad" min="5" max="200">
-    <label>FORMATO DE COORDENADA</label><select id="cUnit"><option value="utm">UTM</option><option value="ll">Latitude / Longitude</option></select>
-  </div>
-  <div class="card"><h2>MAPA OFFLINE</h2>
-    <p>Enquadre no mapa a região da trilha e baixe antes de sair de casa (precisa de internet). Baixa do zoom 12 ao 15, no máximo 2500 quadros.</p>
-    <div class="row"><button class="b pri" id="dlmap">BAIXAR REGIÃO VISÍVEL</button><button class="b red" id="clrmap">LIMPAR</button></div>
-    <p id="dlst">—</p>
-  </div>
-  <div class="card"><h2>GARMIN 935</h2>
-    <p>1) Na aba TRILHAS toque em GPX da trilha. 2) Entre em connect.garmin.com no computador, Treinos → Percursos → Importar. 3) Sincronize o relógio: o percurso aparece em Navegação → Percursos. Os pontos viram alertas de ponto de percurso. A Garmin não oferece envio direto para uso pessoal; vamos estudar isso na fase 2.</p>
-  </div>
-  <div class="card"><h2>BACKUP</h2>
-    <p>Guarda todas as trilhas num arquivo.</p>
-    <div class="row"><button class="b" id="bkexp">EXPORTAR TUDO</button><button class="b" id="bkimp">IMPORTAR BACKUP</button></div>
-  </div>
+
+  <div class="sec">NAVEGAÇÃO</div>
+  <div class="set"><div><b>Raio do ponto</b><small>Distância para marcar o ponto como batido</small></div><div class="ctl"><input type="number" id="cRad" min="5" max="200"><span>m</span></div></div>
+  <div class="set"><div><b>Coordenadas</b><small>Formato mostrado na tela</small></div><div class="ctl"><select id="cUnit"><option value="utm">UTM</option><option value="ll">Lat / Lon</option></select></div></div>
+
+  <div class="sec">EMERGÊNCIA</div>
+  <div class="set col"><div><b>Local do soro (cobra e escorpião)</b><small id="venomTxt">Não definido</small></div>
+    <div class="row"><button class="b pri sm" id="venomMap">MARCAR NO MAPA</button><button class="b sm" id="venomHosp">ESCOLHER ENTRE HOSPITAIS</button><button class="b red sm" id="venomClr">LIMPAR</button></div></div>
+  <div class="set col"><div><b>Hospitais próximos da trilha</b><small>Buscados sozinhos ao criar a trilha (precisa de internet). Confirme sempre se há pronto-socorro 24 h.</small></div>
+    <div class="row"><button class="b pri sm" id="hospS">BUSCAR PARA A TRILHA ABERTA</button></div></div>
+
+  <div class="sec">MAPA OFFLINE</div>
+  <div class="set col"><div><b>Baixar região</b><small>Enquadre a trilha no mapa e baixe em casa, com internet (zoom 12 a 15, até 2500 quadros).</small><small id="dlst" style="color:var(--ok)">—</small></div>
+    <div class="row"><button class="b pri sm" id="dlmap">BAIXAR REGIÃO VISÍVEL</button><button class="b red sm" id="clrmap">LIMPAR</button></div></div>
+
+  <div class="sec">USAR NO RELÓGIO</div>
+  <div class="step"><i><span>1</span></i><div>Na aba TRILHAS, toque em <b>GPX</b> da trilha.</div></div>
+  <div class="step"><i><span>2</span></i><div>No computador, abra connect.garmin.com → Treinos → Percursos → <b>Importar</b>.</div></div>
+  <div class="step"><i><span>3</span></i><div>Sincronize o relógio. O percurso aparece em Navegação → Percursos.<small>Garmin 935. O envio direto pelo app fica para a fase 2.</small></div></div>
+
+  <div class="sec">BACKUP</div>
+  <div class="set col"><div><b>Todas as trilhas num arquivo</b><small>Guarde antes de trilhas importantes.</small></div>
+    <div class="row"><button class="b sm" id="bkexp">EXPORTAR TUDO</button><button class="b sm" id="bkimp">IMPORTAR BACKUP</button></div></div>
 </div>
 
 <div id="tabbar">
@@ -246,6 +269,9 @@ function drawMap(){
   w.onclick=e=>{e.stopPropagation();hzTap(h)};
   const m=new maplibregl.Marker({element:w,draggable:ed}).setLngLat(h.ll).addTo(map);
   m.on('dragend',()=>{h.ll=m.getLngLat().toArray();save()});hmks.push(m)});
+ [...(t.emerg?t.emerg.hosp.map(h=>({k:'hosp',...h})):[]),...(S.cfg.venom?[{k:'venom',...S.cfg.venom}]:[])].forEach(h=>{const w=document.createElement('div');w.className='hzw';
+  w.innerHTML=`<div class="hz ${h.k}">${h.k==='hosp'?'✚':'🐍'}</div>`;w.onclick=e=>{e.stopPropagation();emTap(h)};
+  hmks.push(new maplibregl.Marker({element:w}).setLngLat(h.ll).addTo(map))});
  drawLine();
 }
 function drawLine(){if(!ready)return;const t=T();const c=t?ordered(t).map(p=>p.ll):[];
@@ -320,7 +346,7 @@ function hzTap(h){if(tab==='editar'){if(confirm(`Apagar ${HK[h.kind][1]}${h.note
 document.querySelectorAll('#etool button[data-t]').forEach(b=>b.onclick=()=>{tool=tool===b.dataset.t?null:b.dataset.t;
  document.querySelectorAll('#etool button[data-t]').forEach(x=>x.classList.toggle('on',x.dataset.t===tool));
  $('#ehint').textContent=tool?`Toque no mapa para marcar: ${TN[tool]||HK[tool][1]}. (Toque de novo no botão para parar.)`:'Escolha o que marcar e toque no mapa. Toque num ponto para editar; arraste para mover.'});
-map.on('click',e=>{if(tab==='editar'&&tool)addAt([e.lngLat.lng,e.lngLat.lat])});
+map.on('click',e=>{if(settingVenom){settingVenom=false;const nm=prompt('Nome do local (ex.: hospital):','');if(nm){S.cfg.venom={name:nm,ll:[e.lngLat.lng,e.lngLat.lat]};save();drawMap();toast('LOCAL DO SORO SALVO','warn')}return}if(tab==='editar'&&tool)addAt([e.lngLat.lng,e.lngLat.lat])});
 $('#ehere').onclick=()=>{if(!tool)return toast('Escolha primeiro o que marcar','warn');if(!me)return toast('Ligue o GPS (botão GPS)','warn');addAt([...me])};
 function addAt(ll){const t=T();if(!t)return;
  if(HK[tool]){const note=prompt('Observação (opcional):','')||'';const h={id:uid(),kind:tool,note,ll};t.hz.push(h);hist.push({k:'hz',id:h.id});save();drawMap();return}
@@ -329,7 +355,8 @@ function addAt(ll){const t=T();if(!t)return;
  const p={id:uid(),type:tool,name:'',action:'',ll};
  // fim sempre por último, início sempre primeiro
  if(tool==='start')t.pts.unshift(p);else if(tool!=='end'&&t.pts.length&&t.pts[t.pts.length-1].type==='end')t.pts.splice(t.pts.length-1,0,p);else t.pts.push(p);
- p.name=labels(t)[p.id];hist.push({k:'pt',id:p.id});save();drawMap();if(tool==='obj')editPoint(p.id)}
+ p.name=labels(t)[p.id];hist.push({k:'pt',id:p.id});save();drawMap();if(t.pts.length===1&&!t.emerg)findHospitals(t);if(tool==='obj')editPoint(p.id)}
+$('#ehosp').onclick=()=>{const t=T();if(!t||!t.pts.length)return toast('Marque o início antes','warn');toast('BUSCANDO HOSPITAIS…','warn');findHospitals(t,true)};
 $('#eundo').onclick=()=>{const t=T(),h=hist.pop();if(!t||!h)return toast('Nada para desfazer','warn');
  if(h.k==='pt')t.pts=t.pts.filter(p=>p.id!==h.id);else t.hz=t.hz.filter(x=>x.id!==h.id);save();drawMap()};
 function editPoint(id){const t=T(),p=t.pts.find(x=>x.id===id),L=labels(t);
@@ -367,13 +394,36 @@ $('#brec').onclick=()=>{const t=T();if(!t)return toast('Abra uma trilha','warn')
   if(tr&&rec.pts.length>1){tr.tracks.push({id:uid(),start:rec.start,end:Date.now(),pts:rec.pts,hits:rec.hits,dir:tr.run.dir})}
   rec=null;S.rec=null;save();drawLine();renderAll();if(tr)report(tr.id)}};
 
+// ================= EMERGÊNCIA =================
+const OVP=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+async function ovp(q){let err;for(const u of OVP){try{const r=await fetch(u,{method:'POST',body:'data='+encodeURIComponent(q)});if(r.ok)return await r.json();err=r.status}catch(e){err=e}}throw err}
+function findHospitals(t,manual){
+ const c=(t.pts[0]&&t.pts[0].ll)||[map.getCenter().lng,map.getCenter().lat];
+ const q=`[out:json][timeout:20];nwr["amenity"="hospital"](around:30000,${c[1]},${c[0]});out center 40;`;
+ return ovp(q).then(j=>{
+  const L=(j.elements||[]).map(e=>({name:e.tags&&e.tags.name||'Hospital sem nome',ll:[e.lon??(e.center&&e.center.lon),e.lat??(e.center&&e.center.lat)],er:!!(e.tags&&e.tags.emergency==='yes')})).filter(h=>h.ll[0]!=null);
+  L.forEach(h=>h.d=dist(c,h.ll));L.sort((a,b)=>a.d-b.d);
+  const pick=L.filter(h=>h.er).slice(0,2);L.forEach(h=>{if(pick.length<3&&!pick.includes(h))pick.push(h)});
+  if(!pick.length){if(manual)toast('Nenhum hospital achado a 30 km','warn');return}
+  pick.sort((a,b)=>a.d-b.d);t.emerg={hosp:pick.map(({name,ll,er})=>({name,ll,er})),t:Date.now()};save();drawMap();renderAll();
+  if(manual||t.id===S.cur)toast(`HOSPITAL MAIS PRÓXIMO<br>${esc(pick[0].name)}<br>${fmtD(pick[0].d)}`,'warn');
+ }).catch(()=>{if(manual)toast('Sem internet para buscar hospitais','warn')})}
+const routeLink=ll=>`https://www.google.com/maps/dir/?api=1&destination=${ll[1]},${ll[0]}`;
+function emTap(h){const ref=me||(T()&&T().pts[0]&&T().pts[0].ll)||[map.getCenter().lng,map.getCenter().lat];
+ modal(`<h2>${h.k==='hosp'?'✚ HOSPITAL':'🐍 SORO COBRA / ESCORPIÃO'}</h2><p style="font-size:15px">${esc(h.name)}</p><p style="color:var(--amber)">${fmtD(dist(ref,h.ll))} · AZ ${Math.round(bearing(ref,h.ll))}°</p>${h.er?'<p style="color:var(--ok)">Marcado como pronto-socorro</p>':'<p style="color:var(--dim)">Confirme se tem pronto-socorro 24 h.</p>'}<p style="color:var(--dim)">${fmtLL(h.ll)}</p>
+ <div class="row"><a class="b pri" href="${routeLink(h.ll)}" target="_blank">TRAÇAR ROTA</a><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
+function emSection(ref){const t=T(),H=((t&&t.emerg&&t.emerg.hosp)||[]).map(h=>({...h,d:dist(ref,h.ll)})).sort((a,b)=>a.d-b.d),V=S.cfg.venom;
+ const row=(k,h,fix)=>`<div class="emr"><div class="k">${k}</div>${h?`<div class="n">${esc(h.name)}</div><div class="d">${fmtD(dist(ref,h.ll))} · AZ ${Math.round(bearing(ref,h.ll))}°</div><a class="b sm pri" href="${routeLink(h.ll)}" target="_blank">ROTA</a> <button class="b sm" onclick="showEm(${h.ll[0]},${h.ll[1]})">VER NO MAPA</button>`:`<div class="n" style="color:var(--dim)">${fix}</div>`}</div>`;
+ return `<h2 style="margin-top:14px">▌ONDE IR</h2>${row('TORÇÃO · FRATURA · MAL-ESTAR',H[0],'Sem hospital salvo. Em EDITAR toque em ✚ HOSPITAIS (com internet).')}${row('COBRA · ESCORPIÃO',V?{...V}:null,'Local do soro não definido. Veja em AJUSTES → Emergência.')}`}
+function showEm(lon,lat){closeModal();go('mapa');map.flyTo({center:[lon,lat],zoom:14})}
+
 // ================= SOS =================
 $('#bsos').onclick=()=>{
- if(!me){startGps();return modal(`<h2 style="color:#ff7a66">SOS</h2><p>Sem posição ainda. Ligando o GPS… aguarde alguns segundos e toque SOS de novo (precisa de céu aberto).</p><div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
+ if(!me){startGps();const t0=T(),r0=(t0&&t0.pts[0]&&t0.pts[0].ll)||[map.getCenter().lng,map.getCenter().lat];return modal(`<h2 style="color:#ff7a66">▌SOS</h2><p>Sem posição ainda. Ligando o GPS… aguarde e toque SOS de novo (céu aberto). Distâncias abaixo são a partir do início da trilha.</p>${emSection(r0)}<div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
  const ll=me,txt=`SOS — preciso de ajuda.\nPosição: ${utm(ll)}\nLat/Lon: ${ll[1].toFixed(6)}, ${ll[0].toFixed(6)}\nhttps://maps.google.com/?q=${ll[1].toFixed(6)},${ll[0].toFixed(6)}`;
  window._sos=txt;
  modal(`<h2 style="color:#ff7a66">▌SOS — MINHA POSIÇÃO</h2><div class="big">${utm(ll)}</div><p>Lat/Lon: ${ll[1].toFixed(6)}, ${ll[0].toFixed(6)}</p><p style="color:var(--dim)">Precisão ±${Math.round(meAcc)} m · ${hhmm(Date.now())}</p>
- <div class="row"><button class="b pri" onclick="sosShare()">ENVIAR (WHATSAPP…)</button><button class="b" onclick="sosCopy()">COPIAR</button><button class="b" onclick="closeModal()">FECHAR</button></div>`)};
+ ${emSection(ll)}<div class="row"><button class="b pri" onclick="sosShare()">ENVIAR (WHATSAPP…)</button><button class="b" onclick="sosCopy()">COPIAR</button><button class="b" onclick="closeModal()">FECHAR</button></div>`)};
 function sosShare(){if(navigator.share)navigator.share({text:window._sos}).catch(()=>{});else sosCopy()}
 function sosCopy(){navigator.clipboard&&navigator.clipboard.writeText(window._sos).then(()=>toast('COPIADO','warn'),()=>prompt('Copie:',window._sos))}
 
@@ -389,13 +439,14 @@ function newTrailFlow(){const name=prompt('Nome da trilha:');if(!name){return go
 $('#tnew').onclick=newTrailFlow;
 function resetRun(id){if(!confirm('Zerar o progresso (pontos batidos) desta trilha?'))return;const t=S.trails.find(x=>x.id===id);t.run={dir:'ida',done:{ida:{},volta:{}},act:{}};save();renderTrails()}
 function delTrail(id){const t=S.trails.find(x=>x.id===id);if(!confirm(`Apagar "${t.name}" e suas gravações?`))return;S.trails=S.trails.filter(x=>x.id!==id);if(S.cur===id)S.cur=S.trails[0]?.id||null;save();renderTrails()}
-function brief(id){const t=S.trails.find(x=>x.id===id),L=labels(t),objs=t.pts.filter(p=>p.action),dg=t.hz.filter(h=>h.kind==='danger'),wt=t.hz.filter(h=>h.kind==='water'),len=trailLen(t);
+function brief(id){const t=S.trails.find(x=>x.id===id);if(!t.emerg&&t.pts.length)findHospitals(t).then(()=>{if($('#modal').style.display==='flex'&&$('#modal h2')&&$('#modal h2').textContent.includes('MISSÃO'))brief(id)});const L=labels(t),objs=t.pts.filter(p=>p.action),dg=t.hz.filter(h=>h.kind==='danger'),wt=t.hz.filter(h=>h.kind==='water'),len=trailLen(t);
  modal(`<h2>▌ORDEM DE MISSÃO</h2><p style="font-size:16px;color:var(--txt)">${esc(t.name)}</p>${t.desc?`<p style="color:var(--dim)">${esc(t.desc)}</p>`:''}
  <p><b style="color:var(--amber)">DISTÂNCIA (reta entre pontos):</b> ${fmtD(len)} · ida e volta ${fmtD(len*2)}</p>
  <p><b style="color:var(--amber)">TEMPO ESTIMADO:</b> ${fmtT(len/3.5*3600)} só ida (3,5 km/h)</p>
  <p><b style="color:var(--amber)">PONTOS:</b> ${t.pts.map(p=>L[p.id]).join(' → ')||'—'}</p>
  ${objs.length?`<p><b style="color:var(--amber)">AÇÕES:</b></p><ul>${objs.map(p=>`<li>${L[p.id]} ${esc(p.name)}: ${esc(p.action)}</li>`).join('')}</ul>`:''}
  ${dg.length?`<p><b style="color:#ff7a66">PERIGOS (${dg.length}):</b></p><ul>${dg.map(h=>`<li>${esc(h.note)||'sem descrição'}</li>`).join('')}</ul>`:''}
+ ${(()=>{const e=t.emerg&&t.emerg.hosp[0];return `<p><b style="color:#ff7a66">HOSPITAL MAIS PRÓXIMO:</b> ${e?esc(e.name)+' ('+fmtD(dist(t.pts[0]?t.pts[0].ll:e.ll,e.ll))+' do início)':'não buscado'}</p>`+(S.cfg.venom?`<p><b style="color:var(--ok)">SORO COBRA/ESCORPIÃO:</b> ${esc(S.cfg.venom.name)}</p>`:'')})()}
  ${wt.length?`<p><b style="color:var(--cy)">ÁGUA:</b> ${wt.length} ponto(s) marcado(s)</p>`:''}
  <div class="row"><button class="b pri" onclick="startMission('${id}')">INICIAR MISSÃO</button><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
 function startMission(id){closeModal();openT(id,'mapa');startGps();setTimeout(fit,300)}
@@ -437,7 +488,15 @@ function importGpx(txt,name){const d=new DOMParser().parseFromString(txt,'applic
 $('#bkexp').onclick=()=>outFile('trilhas_backup.trilha',JSON.stringify({trails:S.trails}),'application/json',1);
 
 // ================= AJUSTES / OFFLINE =================
-function renderSettings(){$('#cRad').value=S.cfg.radius;$('#cUnit').value=S.cfg.unit;tileCount()}
+let settingVenom=false;
+function renderSettings(){$('#cRad').value=S.cfg.radius;$('#cUnit').value=S.cfg.unit;tileCount();
+ $('#venomTxt').textContent=S.cfg.venom?S.cfg.venom.name+' · '+fmtLL(S.cfg.venom.ll):'Não definido. Marque no mapa o local que atende cobra e escorpião.'}
+$('#venomMap').onclick=()=>{settingVenom=true;go('mapa');toast('TOQUE NO MAPA<br>onde fica o local do soro','warn')};
+$('#venomClr').onclick=()=>{delete S.cfg.venom;save();renderSettings();drawMap()};
+$('#hospS').onclick=()=>{const t=T();if(!t||!t.pts.length)return toast('Abra uma trilha com início marcado','warn');toast('BUSCANDO…','warn');findHospitals(t,true)};
+$('#venomHosp').onclick=()=>{const t=T(),H=t&&t.emerg&&t.emerg.hosp;if(!H||!H.length)return toast('Busque os hospitais da trilha antes','warn');
+ window._H=H;modal(`<h2>ESCOLHER LOCAL DO SORO</h2>${H.map((h,i)=>`<div class="emr"><div class="n">${esc(h.name)}</div><button class="b sm pri" onclick="setVenom(${i})">USAR ESTE</button></div>`).join('')}<div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)};
+function setVenom(i){const h=window._H[i];S.cfg.venom={name:h.name,ll:h.ll};save();closeModal();renderSettings();drawMap()}
 $('#cRad').onchange=e=>{S.cfg.radius=Math.max(5,Math.min(200,+e.target.value||30));save()};
 $('#cUnit').onchange=e=>{S.cfg.unit=e.target.value;save()};
 async function tileCount(){try{const c=await caches.open('tiles-v1');$('#dlst').textContent=(await c.keys()).length+' quadros guardados no aparelho'}catch(e){$('#dlst').textContent='Offline indisponível aqui (precisa de HTTPS ou localhost).'}}
