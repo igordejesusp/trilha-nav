@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TRILHA">
-<title>TRILHA // NAV</title>
+<meta name="apple-mobile-web-app-title" content="Boonie">
+<title>Boonie</title>
 <link rel="stylesheet" href="maplibre-gl.css">
 <script src="maplibre-gl.js"></script>
 <script src="live-config.js"></script>
@@ -141,7 +141,7 @@ a.b{text-decoration:none;display:inline-block}
 <div id="map"></div>
 
 <div id="top" class="hud">
-  <div class="brand"><img src="logo.png" alt=""><b id="tname">TRILHA // NAV</b></div><span class="r" id="clock">--:--:--</span>
+  <div class="brand"><img src="logo.png" alt=""><b id="tname">BOONIE</b></div><span class="r" id="clock">--:--:--</span>
   <span id="coord">GPS DESLIGADO</span><span class="r"><span id="recb">● REC</span> <span id="meta"></span></span>
 </div>
 <div id="nav" class="hud off">
@@ -218,7 +218,7 @@ a.b{text-decoration:none;display:inline-block}
 <div id="tabbar">
   <button data-v="trilhas"><i>▤</i>TRILHAS</button><button data-v="mapa" class="on"><i>◉</i>MAPA</button><button data-v="editar"><i>✚</i>EDITAR</button><button data-v="suporte"><i>◎</i>SUPORTE</button><button data-v="ajustes"><i>⚙</i>AJUSTES</button>
 </div>
-<div id="splash"><img src="logo.png" alt=""><b>TRILHA // NAV</b><small>NAVEGAÇÃO TÁTICA</small></div>
+<div id="splash"><img src="logo.png" alt=""><b>BOONIE</b><small>NAVEGAÇÃO EM TRILHA</small></div>
 <div id="modal"></div><div id="toast"></div>
 <input type="file" id="file" accept=".gpx,.json,.trilha" style="display:none">
 
@@ -328,7 +328,7 @@ function renderNav(){
  $('#naz').textContent=`AZ ${Math.round(b)}° / ${Math.round(b*17.7778)} mil`;
  $('#arrow').setAttribute('transform',`rotate(${b})`);
 }
-function renderTop(){const t=T();$('#tname').textContent=t?t.name.toUpperCase():'TRILHA // NAV';
+function renderTop(){const t=T();$('#tname').textContent=t?t.name.toUpperCase():'BOONIE';
  $('#coord').textContent=me?(S.cfg.unit==='utm'?'UTM ':'')+fmtLL(me):(watchId!=null?'BUSCANDO SATÉLITES…':'GPS DESLIGADO');
  $('#meta').textContent=me&&meAcc?`±${Math.round(meAcc)} m`:'';$('#recb').classList.toggle('on',!!rec)}
 function renderAll(){renderTop();renderSheet();renderNav();$('#brec').classList.toggle('on',!!rec)}
