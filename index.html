@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f0a">
+<link rel="manifest" href="manifest.json">
+<title>TRILHA // NAV</title>
+<link rel="stylesheet" href="maplibre-gl.css">
+<script src="maplibre-gl.js"></script>
+<style>
+:root{--bg:#0b0f0a;--panel:#111810;--line:#2c3a26;--amber:#ffb000;--red:#e0442f;--ok:#8fd14f;--cy:#4cc9ff;--txt:#c9d6b8;--dim:#6f805f;--s:1}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;overflow:hidden;-webkit-user-select:none;user-select:none}
+button,input,select,textarea{font:inherit;color:inherit}
+#map{position:absolute;inset:0}
+.hud{position:absolute;left:0;right:0;z-index:5;background:linear-gradient(var(--panel),#0e140d);border:1px solid var(--line);font-size:12px}
+#top{top:0;border-width:0 0 1px;padding:calc(6px + env(safe-area-inset-top)) 12px 6px;display:grid;grid-template-columns:1fr auto;gap:1px 10px}
+#top b{color:var(--amber);letter-spacing:.15em;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#top .r{text-align:right;color:var(--dim)}
+#coord{color:var(--ok);font-size:13px}
+#recb{color:var(--red);font-weight:700;display:none}
+#recb.on{display:inline;animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.2}}
+#nav{top:var(--navtop,62px);left:8px;right:56px;display:flex;align-items:center;gap:10px;padding:8px 10px}
+#nav.off{display:none}
+#compass{width:54px;height:54px;flex:none}
+#nav .t{flex:1;min-width:0}
+#nav .lbl{color:var(--dim);font-size:10px;letter-spacing:.15em}
+#nav .big{font-size:24px;color:var(--amber);line-height:1.1}
+#nav .big small{font-size:11px;color:var(--txt)}
+#nav .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#nav.min #compass,#nav.min .lbl,#nav.min .big small{display:none}
+#nav.min{padding:6px 10px}#nav.min .big{font-size:18px}
+#btns{position:absolute;right:8px;top:var(--navtop,62px);z-index:5;display:flex;flex-direction:column;gap:6px}
+#btns button{width:40px;height:40px;background:var(--panel);border:1px solid var(--line);color:var(--amber);font:700 10px monospace}
+#btns button.on{background:#2a1f00;border-color:var(--amber)}
+#btns #bsos{background:#3a0f08;border-color:var(--red);color:#ff7a66}
+#btns #brec.on{background:#3a0f08;border-color:var(--red);color:#ff7a66}
+#sheet{bottom:calc(56px + env(safe-area-inset-bottom));border-width:1px 0 0;display:flex;flex-direction:column}
+#sh{display:flex;align-items:center;gap:8px;padding:8px 12px;border:0;background:none;text-align:left;width:100%}
+#sh .grip{width:34px;height:4px;background:var(--line);border-radius:2px;position:absolute;top:3px;left:calc(50% - 17px)}
+#sh .sum{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sh .sum em{color:var(--amber);font-style:normal}
+#sh .ch{color:var(--dim)}
+#sbody{display:none;max-height:34vh;overflow:auto;padding:0 8px 8px}
+#sheet.open #sbody{display:block}
+#dirs{display:flex;gap:6px;margin-bottom:6px}
+#dirs button{flex:1;padding:7px;background:none;border:1px solid var(--line);color:var(--dim);letter-spacing:.15em}
+#dirs button.on{color:var(--amber);border-color:var(--amber)}
+.wp{display:flex;align-items:center;gap:10px;padding:7px 8px;border:1px solid var(--line);margin-bottom:5px;background:#0d130c}
+.wp.next{border-color:var(--amber);box-shadow:inset 3px 0 var(--amber)}
+.wp.done{opacity:.55}
+.wp .id{width:38px;color:var(--amber);font-weight:700}
+.wp.done .id{color:var(--ok)}
+.wp .info{flex:1;min-width:0}
+.wp .info small{display:block;color:var(--dim)}
+.wp .st{font-size:10px;letter-spacing:.1em;color:var(--dim);text-align:right}
+.wp.done .st{color:var(--ok)}.wp.next .st{color:var(--amber)}
+#tabbar{position:absolute;left:0;right:0;bottom:0;z-index:8;height:calc(56px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#0a0e09;border-top:1px solid var(--line);display:flex}
+#tabbar button{flex:1;background:none;border:0;color:var(--dim);font-size:10px;letter-spacing:.12em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+#tabbar button i{font-style:normal;font-size:18px}
+#tabbar button.on{color:var(--amber);box-shadow:inset 0 2px var(--amber)}
+.view{position:absolute;left:0;right:0;top:0;bottom:calc(56px + env(safe-area-inset-bottom));z-index:7;background:var(--bg);overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 12px 20px;display:none}
+.view.on{display:block}
+.view h1{font-size:14px;letter-spacing:.2em;color:var(--amber);margin-bottom:10px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.b{padding:9px 12px;background:var(--panel);border:1px solid var(--line);color:var(--amber);letter-spacing:.1em;font-size:11px}
+.b.pri{background:#2a1f00;border-color:var(--amber)}
+.b.red{color:#ff7a66;border-color:var(--red)}
+.b.sm{padding:6px 9px;font-size:10px}
+.card{border:1px solid var(--line);background:var(--panel);padding:12px;margin-bottom:10px}
+.card.cur{border-color:var(--amber)}
+.card h2{font-size:14px;color:var(--txt);margin-bottom:3px}
+.card .meta{color:var(--dim);font-size:11px;margin-bottom:6px}
+.card p{color:var(--dim);line-height:1.5;font-size:12px}
+.card label{display:block;color:var(--dim);font-size:10px;letter-spacing:.15em;margin:8px 0 3px}
+input,select,textarea{width:100%;background:#0b0f0a;border:1px solid var(--line);padding:9px;-webkit-user-select:text;user-select:text;font-size:14px}
+textarea{min-height:60px}
+#etool{position:absolute;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));z-index:6;display:none;background:#0e140d;border-top:1px solid var(--amber);padding:6px;overflow-x:auto;white-space:nowrap}
+#etool.on{display:block}
+#etool .hint{color:var(--dim);font-size:11px;padding:2px 4px 6px;white-space:normal}
+#etool button{display:inline-block;margin-right:5px;padding:9px 10px;background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:11px;letter-spacing:.08em}
+#etool button.on{border-color:var(--amber);color:var(--amber);background:#2a1f00}
+#modal{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:14px}
+#modal .box{width:100%;max-width:440px;max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--amber);padding:14px}
+#modal h2{color:var(--amber);letter-spacing:.15em;font-size:14px;margin-bottom:8px}
+#modal .big{font-size:22px;color:var(--ok);letter-spacing:.04em;margin:6px 0}
+#modal p,#modal li{line-height:1.5;margin:4px 0}
+#modal ul{padding-left:16px}
+#toast{position:absolute;top:34%;left:50%;transform:translate(-50%,-50%);z-index:30;background:#16240f;border:2px solid var(--ok);color:var(--ok);padding:14px 20px;letter-spacing:.12em;text-align:center;display:none;max-width:86%}
+#toast.warn{background:#2a1500;border-color:var(--amber);color:var(--amber)}
+#toast.bad{background:#2a0c07;border-color:var(--red);color:#ff7a66}
+.mkw{width:30px;height:30px;cursor:pointer}
+.mk{width:30px;height:30px;transform:rotate(45deg) scale(var(--s));background:#0b0f0a;border:2px solid var(--amber);display:grid;place-items:center;color:var(--amber);font:700 9px monospace}
+.mk span{transform:rotate(-45deg);white-space:nowrap}
+.mk.t-start{border-color:var(--ok);color:var(--ok)}
+.mk.t-end{border-color:var(--red);color:#ff7a66}
+.mk.t-obj{background:#2a1f00;border-width:3px}
+.mk.done{border-color:var(--ok);color:var(--ok);background:#16240f}
+.mk.next{animation:p 1.4s infinite;background:#2a1f00;border-color:var(--amber);color:var(--amber)}
+@keyframes p{50%{box-shadow:0 0 0 7px rgba(255,176,0,.25)}}
+.hzw{width:24px;height:24px;cursor:pointer}
+.hz{width:24px;height:24px;transform:scale(var(--s));display:grid;place-items:center;font:700 13px monospace;border:2px solid;background:#0b0f0a;border-radius:3px}
+.hz.danger{color:#ff7a66;border-color:var(--red)}.hz.water{color:var(--cy);border-color:var(--cy)}.hz.shelter{color:var(--ok);border-color:var(--ok)}.hz.exit{color:#fff;border-color:#fff}
+.me{width:18px;height:18px;border-radius:50%;background:var(--cy);border:3px solid #fff;box-shadow:0 0 0 8px rgba(76,201,255,.25)}
+.maplibregl-ctrl-attrib{font-size:9px!important}
+.maplibregl-ctrl-bottom-left{bottom:calc(100px + env(safe-area-inset-bottom))}
+</style></head><body>
+<div id="map"></div>
+
+<div id="top" class="hud">
+  <b id="tname">▌TRILHA // NAV</b><span class="r" id="clock">--:--:--</span>
+  <span id="coord">GPS DESLIGADO</span><span class="r"><span id="recb">● REC</span> <span id="meta"></span></span>
+</div>
+<div id="nav" class="hud off">
+  <svg id="compass" viewBox="-32 -32 64 64"><circle r="30" fill="#0b0f0a" stroke="#2c3a26" stroke-width="2"/><path d="M0-30v5M0 30v-5M-30 0h5M30 0h-5" stroke="#6f805f"/><text y="-17" text-anchor="middle" font-size="7" fill="#e0442f">N</text><g id="arrow"><path d="M0-22 8 10 0 5-8 10Z" fill="#ffb000"/></g></svg>
+  <div class="t"><div class="lbl" id="nlbl">PRÓXIMO PONTO</div><div class="nm" id="nname">—</div><div class="big"><span id="ndist">—</span> <small id="naz"></small></div></div>
+</div>
+<div id="btns">
+  <button id="bgps">GPS</button><button id="bfol">SEG</button><button id="bfit">ALL</button><button id="brec">REC</button><button id="bsos">SOS</button>
+</div>
+
+<div id="etool">
+  <div class="hint" id="ehint">Escolha o que marcar e toque no mapa. Toque num ponto para editar; arraste para mover.</div>
+  <button data-t="start">▶ INÍCIO</button><button data-t="wp">◆ PONTO</button><button data-t="obj">★ OBJETIVO</button><button data-t="end">■ FIM</button>
+  <button data-t="water">≈ ÁGUA</button><button data-t="danger">! PERIGO</button><button data-t="shelter">⌂ ABRIGO</button><button data-t="exit">⇥ SAÍDA</button>
+  <button id="ehere">◎ MINHA POSIÇÃO</button><button id="eundo">↶ DESFAZER</button>
+</div>
+
+<div id="sheet" class="hud">
+  <button id="sh"><span class="grip"></span><span class="sum" id="ssum">—</span><span class="ch" id="sch">▲</span></button>
+  <div id="sbody">
+    <div id="dirs"><button data-d="ida">IDA ▶</button><button data-d="volta">◀ VOLTA</button></div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<div class="view" id="vTrilhas">
+  <h1>▌TRILHAS PLANEJADAS</h1>
+  <div class="row"><button class="b pri" id="tnew">+ NOVA TRILHA</button><button class="b" id="timp">IMPORTAR GPX / TRILHA</button></div>
+  <div id="tlist"></div>
+</div>
+<div class="view" id="vAjustes">
+  <h1>▌AJUSTES</h1>
+  <div class="card"><h2>NAVEGAÇÃO</h2>
+    <label>RAIO PARA BATER O PONTO (METROS)</label><input type="number" id="cRad" min="5" max="200">
+    <label>FORMATO DE COORDENADA</label><select id="cUnit"><option value="utm">UTM</option><option value="ll">Latitude / Longitude</option></select>
+  </div>
+  <div class="card"><h2>MAPA OFFLINE</h2>
+    <p>Enquadre no mapa a região da trilha e baixe antes de sair de casa (precisa de internet). Baixa do zoom 12 ao 15, no máximo 2500 quadros.</p>
+    <div class="row"><button class="b pri" id="dlmap">BAIXAR REGIÃO VISÍVEL</button><button class="b red" id="clrmap">LIMPAR</button></div>
+    <p id="dlst">—</p>
+  </div>
+  <div class="card"><h2>GARMIN 935</h2>
+    <p>1) Na aba TRILHAS toque em GPX da trilha. 2) Entre em connect.garmin.com no computador, Treinos → Percursos → Importar. 3) Sincronize o relógio: o percurso aparece em Navegação → Percursos. Os pontos viram alertas de ponto de percurso. A Garmin não oferece envio direto para uso pessoal; vamos estudar isso na fase 2.</p>
+  </div>
+  <div class="card"><h2>BACKUP</h2>
+    <p>Guarda todas as trilhas num arquivo.</p>
+    <div class="row"><button class="b" id="bkexp">EXPORTAR TUDO</button><button class="b" id="bkimp">IMPORTAR BACKUP</button></div>
+  </div>
+</div>
+
+<div id="tabbar">
+  <button data-v="trilhas"><i>▤</i>TRILHAS</button><button data-v="mapa" class="on"><i>◉</i>MAPA</button><button data-v="editar"><i>✚</i>EDITAR</button><button data-v="ajustes"><i>⚙</i>AJUSTES</button>
+</div>
+<div id="modal"></div><div id="toast"></div>
+<input type="file" id="file" accept=".gpx,.json,.trilha" style="display:none">
+
+<script>
+// ================= DADOS =================
+const LS='trilha.v1',$=s=>document.querySelector(s),R=6371000,rad=d=>d*Math.PI/180;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function seed(){return{cur:null,cfg:{radius:30,unit:'utm'},rec:null,trails:[newTrail('Exemplo — Capim Branco','Trilha de demonstração. Pode apagar.',[
+ ['start','Estacionamento','',[-48.1320,-18.8350]],['wp','Cruzamento da estrada de terra','',[-48.1245,-18.8290]],
+ ['obj','Nascente','Coletar água e tirar foto do grupo',[-48.1170,-18.8215]],['wp','Mirante da represa','',[-48.1085,-18.8150]],
+ ['end','Cachoeira','Descanso e lanche',[-48.1010,-18.8080]]],[['danger','Trecho com pedras soltas',[-48.1210,-18.8250]],['water','Córrego',[-48.1130,-18.8185]]])]}}
+function newTrail(name,desc,pts=[],hz=[]){return{id:uid(),name,desc,pts:pts.map(p=>({id:uid(),type:p[0],name:p[1],action:p[2],ll:p[3]})),hz:hz.map(h=>({id:uid(),kind:h[0],note:h[1],ll:h[2]})),run:{dir:'ida',done:{ida:{},volta:{}},act:{}},tracks:[]}}
+let S;try{S=JSON.parse(localStorage.getItem(LS))}catch(e){}
+if(!S||!S.trails){S=seed();S.cur=S.trails[0].id}
+const save=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
+const T=()=>S.trails.find(t=>t.id===S.cur);
+const TN={start:'INÍCIO',wp:'PONTO',obj:'OBJETIVO',end:'FIM'},HK={water:['≈','ÁGUA'],danger:['!','PERIGO'],shelter:['⌂','ABRIGO'],exit:['⇥','SAÍDA']};
+let tab='mapa',me=null,meAcc=0,follow=false,watchId=null,tool=null,hist=[],mks=[],hmks=[],ready=false,warned=new Set(),rec=S.rec;
+
+// ================= GEO =================
+function dist(a,b){const dl=rad(b[1]-a[1]),dn=rad(b[0]-a[0]);const x=Math.sin(dl/2)**2+Math.cos(rad(a[1]))*Math.cos(rad(b[1]))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+function bearing(a,b){const y=Math.sin(rad(b[0]-a[0]))*Math.cos(rad(b[1]));const x=Math.cos(rad(a[1]))*Math.sin(rad(b[1]))-Math.sin(rad(a[1]))*Math.cos(rad(b[1]))*Math.cos(rad(b[0]-a[0]));return(Math.atan2(y,x)*180/Math.PI+360)%360}
+function utm([lon,lat]){const a=6378137,f=1/298.257223563,k0=.9996,e2=f*(2-f),ep2=e2/(1-e2);
+ const z=Math.floor((lon+180)/6)+1,l0=rad((z-1)*6-180+3),φ=rad(lat),λ=rad(lon);
+ const N=a/Math.sqrt(1-e2*Math.sin(φ)**2),Tt=Math.tan(φ)**2,C=ep2*Math.cos(φ)**2,A=Math.cos(φ)*(λ-l0);
+ const M=a*((1-e2/4-3*e2**2/64-5*e2**3/256)*φ-(3*e2/8+3*e2**2/32+45*e2**3/1024)*Math.sin(2*φ)+(15*e2**2/256+45*e2**3/1024)*Math.sin(4*φ)-(35*e2**3/3072)*Math.sin(6*φ));
+ const E=k0*N*(A+(1-Tt+C)*A**3/6+(5-18*Tt+Tt*Tt+72*C-58*ep2)*A**5/120)+500000;
+ let Nn=k0*(M+N*Math.tan(φ)*(A*A/2+(5-Tt+9*C+4*C*C)*A**4/24+(61-58*Tt+Tt*Tt+600*C-330*ep2)*A**6/720));if(lat<0)Nn+=1e7;
+ return `${z}${'CDEFGHJKLMNPQRSTUVWX'[Math.floor((lat+80)/8)]} ${String(Math.round(E)).padStart(6,'0')} ${String(Math.round(Nn)).padStart(7,'0')}`}
+const fmtLL=ll=>S.cfg.unit==='utm'?utm(ll):`${ll[1].toFixed(5)}, ${ll[0].toFixed(5)}`;
+const fmtD=m=>m>=1000?(m/1000).toFixed(2)+' km':Math.round(m)+' m';
+const fmtT=ms=>{const m=Math.round(ms/60000),h=Math.floor(m/60);return h?`${h}h${String(m%60).padStart(2,'0')}`:`${m} min`};
+const hhmm=t=>new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+const pathLen=c=>{let d=0;for(let i=1;i<c.length;i++)d+=dist(c[i-1],c[i]);return d};
+
+// ================= TRILHA =================
+function labels(t){let p=0,o=0;const L={};t.pts.forEach(x=>L[x.id]=x.type==='start'?'INI':x.type==='end'?'FIM':x.type==='obj'?'OBJ'+(++o):'P'+(++p));return L}
+const ordered=t=>t.run.dir==='ida'?t.pts:[...t.pts].reverse();
+const nextPt=()=>{const t=T();return t&&ordered(t).find(p=>!t.run.done[t.run.dir][p.id])};
+const trailLen=t=>pathLen(t.pts.map(p=>p.ll));
+
+// ================= MAPA =================
+const map=new maplibregl.Map({container:'map',center:[-48.115,-18.82],zoom:13,attributionControl:{compact:true},
+ style:{version:8,sources:{t:{type:'raster',tileSize:256,maxzoom:17,attribution:'© OpenTopoMap, OSM',tiles:['https://a.tile.opentopomap.org/{z}/{x}/{y}.png']}},
+ layers:[{id:'bg',type:'background',paint:{'background-color':'#0b0f0a'}},{id:'t',type:'raster',source:'t',paint:{'raster-saturation':-.55,'raster-brightness-max':.55,'raster-contrast':.15,'raster-hue-rotate':20}}]}});
+map.touchZoomRotate.disableRotation();map.dragRotate.disable();
+map.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
+const meEl=document.createElement('div');meEl.className='me';const meMk=new maplibregl.Marker({element:meEl});
+const emptyLine={type:'Feature',geometry:{type:'LineString',coordinates:[]}};
+map.on('load',()=>{
+ map.addSource('route',{type:'geojson',data:emptyLine});map.addSource('trk',{type:'geojson',data:emptyLine});
+ map.addLayer({id:'route',type:'line',source:'route',paint:{'line-color':'#ffb000','line-width':3,'line-dasharray':[2,1.5]}});
+ map.addLayer({id:'trk',type:'line',source:'trk',paint:{'line-color':'#8fd14f','line-width':3}});
+ ready=true;drawMap();fit();
+});
+function scaleUI(){const z=map.getZoom();document.documentElement.style.setProperty('--s',Math.max(.65,Math.min(1.25,.65+(z-11)*.1)).toFixed(2))}
+map.on('zoom',scaleUI);scaleUI();
+function fit(){const t=T();if(!t||!t.pts.length)return;const b=new maplibregl.LngLatBounds();t.pts.forEach(p=>b.extend(p.ll));t.hz.forEach(h=>b.extend(h.ll));
+ map.fitBounds(b,{padding:{top:130,bottom:190,left:50,right:70},maxZoom:16,duration:500})}
+function drawMap(){
+ mks.forEach(m=>m.remove());hmks.forEach(m=>m.remove());mks=[];hmks=[];
+ const t=T();if(!t){if(ready)map.getSource('route').setData(emptyLine);return}
+ const L=labels(t),nx=nextPt(),dn=t.run.done[t.run.dir],ed=tab==='editar';
+ t.pts.forEach(p=>{const w=document.createElement('div');w.className='mkw';
+  w.innerHTML=`<div class="mk t-${p.type} ${dn[p.id]?'done':''} ${nx&&nx.id===p.id&&!ed?'next':''}"><span>${L[p.id]}</span></div>`;
+  w.onclick=e=>{e.stopPropagation();pointTap(p)};
+  const m=new maplibregl.Marker({element:w,draggable:ed}).setLngLat(p.ll).addTo(map);
+  m.on('dragend',()=>{p.ll=m.getLngLat().toArray();save();drawLine();renderSheet()});mks.push(m)});
+ t.hz.forEach(h=>{const w=document.createElement('div');w.className='hzw';w.innerHTML=`<div class="hz ${h.kind}">${HK[h.kind][0]}</div>`;
+  w.onclick=e=>{e.stopPropagation();hzTap(h)};
+  const m=new maplibregl.Marker({element:w,draggable:ed}).setLngLat(h.ll).addTo(map);
+  m.on('dragend',()=>{h.ll=m.getLngLat().toArray();save()});hmks.push(m)});
+ drawLine();
+}
+function drawLine(){if(!ready)return;const t=T();const c=t?ordered(t).map(p=>p.ll):[];
+ map.getSource('route').setData({type:'Feature',geometry:{type:'LineString',coordinates:c}});
+ map.setPaintProperty('route','line-color',t&&t.run.dir==='volta'?'#4cc9ff':'#ffb000');
+ const tr=rec&&t&&rec.trail===t.id?rec.pts.map(p=>[p[0],p[1]]):[];map.getSource('trk').setData({type:'Feature',geometry:{type:'LineString',coordinates:tr}})}
+
+// ================= UI / RENDER =================
+function modal(h){const m=$('#modal');m.innerHTML=`<div class="box">${h}</div>`;m.style.display='flex'}
+const closeModal=()=>{$('#modal').style.display='none'};
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+function toast(t,cls=''){const e=$('#toast');e.className=cls;e.innerHTML=t;e.style.display='block';navigator.vibrate&&navigator.vibrate([200,100,200]);clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display='none',2400)}
+
+function renderSheet(){
+ const t=T(),box=$('#list');
+ if(!t){$('#ssum').textContent='Nenhuma trilha aberta';box.innerHTML='';return}
+ const L=labels(t),o=ordered(t),nx=nextPt(),dn=t.run.done[t.run.dir],n=o.filter(p=>dn[p.id]).length;
+ $('#ssum').innerHTML=`${t.run.dir==='ida'?'IDA':'VOLTA'} <em>${n}/${o.length}</em> · ${nx?'próx. <em>'+L[nx.id]+'</em>'+(me?' · '+fmtD(dist(me,nx.ll)):''):'trecho concluído'}`;
+ box.innerHTML=o.map(p=>{const d=dn[p.id],x=nx&&nx.id===p.id,dd=me?fmtD(dist(me,p.ll)):'';
+  return `<div class="wp ${d?'done':''} ${x?'next':''}" data-id="${p.id}"><div class="id">${L[p.id]}</div><div class="info">${esc(p.name)}<small>${p.action?'▸ '+esc(p.action):fmtLL(p.ll)}</small></div><div class="st">${d?'✔ '+hhmm(d):x?'▶ '+dd:dd}</div></div>`}).join('')||'<p style="color:var(--dim)">Sem pontos. Vá em EDITAR e marque o caminho.</p>';
+ document.querySelectorAll('#dirs button').forEach(b=>b.classList.toggle('on',b.dataset.d===t.run.dir));
+}
+function renderNav(){
+ const t=T(),nx=nextPt(),box=$('#nav');
+ if(!t||tab!=='mapa'){box.classList.add('off');return}
+ box.classList.remove('off');
+ if(!nx){$('#nname').textContent='TRECHO CONCLUÍDO';$('#ndist').textContent='✔';$('#naz').textContent='';$('#nlbl').textContent=t.run.dir==='ida'?'IDA COMPLETA':'VOLTA COMPLETA';return}
+ $('#nlbl').textContent='PRÓXIMO PONTO';$('#nname').textContent=labels(t)[nx.id]+' — '+nx.name;
+ if(!me){$('#ndist').textContent='—';$('#naz').textContent='ligue o GPS';return}
+ const b=bearing(me,nx.ll);$('#ndist').textContent=fmtD(dist(me,nx.ll));
+ $('#naz').textContent=`AZ ${Math.round(b)}° / ${Math.round(b*17.7778)} mil`;
+ $('#arrow').setAttribute('transform',`rotate(${b})`);
+}
+function renderTop(){const t=T();$('#tname').textContent=t?'▌'+t.name.toUpperCase():'▌TRILHA // NAV';
+ $('#coord').textContent=me?(S.cfg.unit==='utm'?'UTM ':'')+fmtLL(me):(watchId!=null?'BUSCANDO SATÉLITES…':'GPS DESLIGADO');
+ $('#meta').textContent=me&&meAcc?`±${Math.round(meAcc)} m`:'';$('#recb').classList.toggle('on',!!rec)}
+function renderAll(){renderTop();renderSheet();renderNav();$('#brec').classList.toggle('on',!!rec)}
+
+function go(n){
+ tab=n;document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.v===n));
+ $('#vTrilhas').classList.toggle('on',n==='trilhas');$('#vAjustes').classList.toggle('on',n==='ajustes');
+ const isMap=n==='mapa'||n==='editar';
+ $('#sheet').style.display=n==='mapa'?'':'none';$('#etool').classList.toggle('on',n==='editar');
+ $('#btns').style.display=isMap?'flex':'none';$('#top').style.display=isMap?'':'none';
+ if(n==='trilhas')renderTrails();if(n==='ajustes')renderSettings();
+ if(n==='editar'&&!T()){tab='trilhas';return newTrailFlow()}
+ if(isMap){setTimeout(()=>map.resize(),50);drawMap();renderAll();layoutTop()}
+}
+function layoutTop(){const h=$('#top').offsetHeight;document.documentElement.style.setProperty('--navtop',(h+8)+'px')}
+document.querySelectorAll('#tabbar button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+
+// sheet
+$('#sh').onclick=()=>{const s=$('#sheet');s.classList.toggle('open');$('#sch').textContent=s.classList.contains('open')?'▼':'▲'};
+document.querySelectorAll('#dirs button').forEach(b=>b.onclick=()=>{const t=T();if(!t)return;t.run.dir=b.dataset.d;save();drawMap();renderAll()});
+$('#list').onclick=e=>{const el=e.target.closest('.wp');if(!el)return;const p=T().pts.find(x=>x.id===el.dataset.id);pointTap(p,true)};
+$('#nav').onclick=()=>$('#nav').classList.toggle('min');
+
+// ================= PONTOS =================
+function pointTap(p,fly){
+ const t=T();if(tab==='editar')return editPoint(p.id);
+ const L=labels(t),d=t.run.done[t.run.dir][p.id],ad=t.run.act[p.id];
+ if(fly)map.flyTo({center:p.ll,zoom:Math.max(map.getZoom(),15)});
+ modal(`<h2>${L[p.id]} — ${esc(p.name)}</h2><p style="color:var(--dim)">${TN[p.type]} · ${fmtLL(p.ll)}${me?' · a '+fmtD(dist(me,p.ll)):''}</p>
+ ${p.action?`<p><b style="color:var(--amber)">AÇÃO:</b> ${esc(p.action)}</p><p>${ad?'✔ Cumprida às '+hhmm(ad):'Pendente'}</p>`:''}
+ <div class="row">${p.action&&!ad?`<button class="b pri" onclick="actDone('${p.id}')">MARCAR CUMPRIDA</button>`:''}<button class="b" onclick="closeModal()">FECHAR</button></div>`);
+}
+function actDone(id){const t=T();t.run.act[id]=Date.now();save();closeModal();renderAll()}
+function hzTap(h){if(tab==='editar'){if(confirm(`Apagar ${HK[h.kind][1]}${h.note?' ('+h.note+')':''}?`)){const t=T();t.hz=t.hz.filter(x=>x!==h);save();drawMap()}return}
+ modal(`<h2>${HK[h.kind][0]} ${HK[h.kind][1]}</h2><p>${esc(h.note)||'Sem observação'}</p><p style="color:var(--dim)">${fmtLL(h.ll)}${me?' · a '+fmtD(dist(me,h.ll)):''}</p><div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
+
+// ---- edição ----
+document.querySelectorAll('#etool button[data-t]').forEach(b=>b.onclick=()=>{tool=tool===b.dataset.t?null:b.dataset.t;
+ document.querySelectorAll('#etool button[data-t]').forEach(x=>x.classList.toggle('on',x.dataset.t===tool));
+ $('#ehint').textContent=tool?`Toque no mapa para marcar: ${TN[tool]||HK[tool][1]}. (Toque de novo no botão para parar.)`:'Escolha o que marcar e toque no mapa. Toque num ponto para editar; arraste para mover.'});
+map.on('click',e=>{if(tab==='editar'&&tool)addAt([e.lngLat.lng,e.lngLat.lat])});
+$('#ehere').onclick=()=>{if(!tool)return toast('Escolha primeiro o que marcar','warn');if(!me)return toast('Ligue o GPS (botão GPS)','warn');addAt([...me])};
+function addAt(ll){const t=T();if(!t)return;
+ if(HK[tool]){const note=prompt('Observação (opcional):','')||'';const h={id:uid(),kind:tool,note,ll};t.hz.push(h);hist.push({k:'hz',id:h.id});save();drawMap();return}
+ if(tool==='start'||tool==='end'){const ex=t.pts.find(p=>p.type===tool);
+  if(ex){ex.ll=ll;save();drawMap();return toast(TN[tool]+' movido','warn')}}
+ const p={id:uid(),type:tool,name:'',action:'',ll};
+ // fim sempre por último, início sempre primeiro
+ if(tool==='start')t.pts.unshift(p);else if(tool!=='end'&&t.pts.length&&t.pts[t.pts.length-1].type==='end')t.pts.splice(t.pts.length-1,0,p);else t.pts.push(p);
+ p.name=labels(t)[p.id];hist.push({k:'pt',id:p.id});save();drawMap();if(tool==='obj')editPoint(p.id)}
+$('#eundo').onclick=()=>{const t=T(),h=hist.pop();if(!t||!h)return toast('Nada para desfazer','warn');
+ if(h.k==='pt')t.pts=t.pts.filter(p=>p.id!==h.id);else t.hz=t.hz.filter(x=>x.id!==h.id);save();drawMap()};
+function editPoint(id){const t=T(),p=t.pts.find(x=>x.id===id),L=labels(t);
+ modal(`<h2>EDITAR ${L[id]}</h2><label style="color:var(--dim);font-size:10px">NOME</label><input id="pn" value="${esc(p.name)}">
+ <label style="color:var(--dim);font-size:10px;display:block;margin-top:8px">TIPO</label><select id="pt">${Object.entries(TN).map(([k,v])=>`<option value="${k}" ${k===p.type?'selected':''}>${v}</option>`).join('')}</select>
+ <label style="color:var(--dim);font-size:10px;display:block;margin-top:8px">AÇÃO / LEMBRETE NESTE PONTO</label><textarea id="pa" placeholder="Ex.: coletar água, tirar foto do grupo">${esc(p.action)}</textarea>
+ <div class="row"><button class="b pri" onclick="savePt('${id}')">SALVAR</button><button class="b" onclick="movePt('${id}',-1)">▲ SUBIR</button><button class="b" onclick="movePt('${id}',1)">▼ DESCER</button><button class="b red" onclick="delPt('${id}')">APAGAR</button></div>`)}
+function savePt(id){const t=T(),p=t.pts.find(x=>x.id===id);p.name=$('#pn').value.trim()||p.name;p.type=$('#pt').value;p.action=$('#pa').value.trim();save();closeModal();drawMap()}
+function movePt(id,d){const a=T().pts,i=a.findIndex(p=>p.id===id),j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];save();drawMap();editPoint(id)}
+function delPt(id){const t=T();if(!confirm('Apagar este ponto?'))return;t.pts=t.pts.filter(p=>p.id!==id);save();closeModal();drawMap()}
+
+// ================= GPS / REC / HIT =================
+$('#bgps').onclick=()=>{
+ if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null;$('#bgps').classList.remove('on');me=null;meMk.remove();renderAll();return}
+ startGps()};
+function startGps(){if(!navigator.geolocation)return toast('Este aparelho não tem GPS','bad');if(watchId!=null)return;
+ watchId=navigator.geolocation.watchPosition(p=>onPos([p.coords.longitude,p.coords.latitude],p.coords.accuracy),e=>{$('#coord').textContent='ERRO GPS: '+e.message},{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+ $('#bgps').classList.add('on');renderTop()}
+function onPos(ll,acc){
+ me=ll;meAcc=acc;meMk.setLngLat(ll).addTo(map);const t=T();
+ if(rec&&t&&rec.trail===t.id){const l=rec.pts[rec.pts.length-1];if(!l||dist(l,ll)>=5){rec.pts.push([ll[0],ll[1],Date.now()]);if(rec.pts.length%10===0){S.rec=rec;save()}drawLine()}}
+ if(t){const nx=nextPt();
+  if(nx&&dist(ll,nx.ll)<=S.cfg.radius){const now=Date.now();t.run.done[t.run.dir][nx.id]=now;if(rec)rec.hits.push({l:labels(t)[nx.id],t:now});save();drawMap();
+   if(nx.action&&!t.run.act[nx.id])modal(`<h2>${labels(t)[nx.id]} BATIDO ✔</h2><p>${esc(nx.name)}</p><p style="color:var(--amber)">AÇÃO NESTE PONTO:</p><p style="font-size:16px">${esc(nx.action)}</p><div class="row"><button class="b pri" onclick="actDone('${nx.id}')">CUMPRIDO</button><button class="b" onclick="closeModal()">DEPOIS</button></div>`),navigator.vibrate&&navigator.vibrate([300,100,300]);
+   else toast(`${labels(t)[nx.id]} BATIDO ✔`)}
+  t.hz.forEach(h=>{if(h.kind==='danger'&&!warned.has(h.id)&&dist(ll,h.ll)<=100){warned.add(h.id);toast(`! PERIGO A ${Math.round(dist(ll,h.ll))} m<br>${esc(h.note)}`,'bad')}})}
+ if(follow)map.easeTo({center:ll,duration:600});
+ renderAll();
+}
+$('#bfol').onclick=e=>{follow=!follow;e.target.classList.toggle('on',follow);if(follow){startGps();if(me)map.easeTo({center:me,zoom:Math.max(map.getZoom(),16)})}};
+$('#bfit').onclick=fit;
+$('#brec').onclick=()=>{const t=T();if(!t)return toast('Abra uma trilha','warn');
+ if(!rec){startGps();rec={trail:t.id,start:Date.now(),pts:[],hits:[]};S.rec=rec;save();renderAll();toast('GRAVANDO TRILHA','warn')}
+ else{if(!confirm('Parar a gravação e salvar?'))return;const tr=S.trails.find(x=>x.id===rec.trail);
+  if(tr&&rec.pts.length>1){tr.tracks.push({id:uid(),start:rec.start,end:Date.now(),pts:rec.pts,hits:rec.hits,dir:tr.run.dir})}
+  rec=null;S.rec=null;save();drawLine();renderAll();if(tr)report(tr.id)}};
+
+// ================= SOS =================
+$('#bsos').onclick=()=>{
+ if(!me){startGps();return modal(`<h2 style="color:#ff7a66">SOS</h2><p>Sem posição ainda. Ligando o GPS… aguarde alguns segundos e toque SOS de novo (precisa de céu aberto).</p><div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
+ const ll=me,txt=`SOS — preciso de ajuda.\nPosição: ${utm(ll)}\nLat/Lon: ${ll[1].toFixed(6)}, ${ll[0].toFixed(6)}\nhttps://maps.google.com/?q=${ll[1].toFixed(6)},${ll[0].toFixed(6)}`;
+ window._sos=txt;
+ modal(`<h2 style="color:#ff7a66">▌SOS — MINHA POSIÇÃO</h2><div class="big">${utm(ll)}</div><p>Lat/Lon: ${ll[1].toFixed(6)}, ${ll[0].toFixed(6)}</p><p style="color:var(--dim)">Precisão ±${Math.round(meAcc)} m · ${hhmm(Date.now())}</p>
+ <div class="row"><button class="b pri" onclick="sosShare()">ENVIAR (WHATSAPP…)</button><button class="b" onclick="sosCopy()">COPIAR</button><button class="b" onclick="closeModal()">FECHAR</button></div>`)};
+function sosShare(){if(navigator.share)navigator.share({text:window._sos}).catch(()=>{});else sosCopy()}
+function sosCopy(){navigator.clipboard&&navigator.clipboard.writeText(window._sos).then(()=>toast('COPIADO','warn'),()=>prompt('Copie:',window._sos))}
+
+// ================= TRILHAS (lista, briefing, relatório) =================
+function renderTrails(){
+ $('#tlist').innerHTML=S.trails.map(t=>{const objs=t.pts.filter(p=>p.type==='obj').length,last=t.tracks[t.tracks.length-1];
+  return `<div class="card ${t.id===S.cur?'cur':''}"><h2>${esc(t.name)}</h2><div class="meta">${t.pts.length} pontos · ${objs} objetivos · ${fmtD(trailLen(t))} · ${t.hz.length} marcas${last?' · última: '+new Date(last.start).toLocaleDateString('pt-BR'):' · nunca feita'}</div>
+  ${t.desc?`<p>${esc(t.desc)}</p>`:''}
+  <div class="row"><button class="b pri sm" onclick="brief('${t.id}')">BRIEFING</button><button class="b sm" onclick="openT('${t.id}','editar')">EDITAR</button><button class="b sm" onclick="exportGpx('${t.id}',0)">GPX</button><button class="b sm" onclick="exportGpx('${t.id}',1)">ENVIAR</button><button class="b sm" onclick="report('${t.id}')">RELATÓRIO</button><button class="b sm" onclick="resetRun('${t.id}')">ZERAR</button><button class="b red sm" onclick="delTrail('${t.id}')">APAGAR</button></div></div>`}).join('')||'<p style="color:var(--dim)">Nenhuma trilha. Crie a primeira.</p>'}
+function openT(id,to){S.cur=id;save();hist=[];warned.clear();go(to)}
+function newTrailFlow(){const name=prompt('Nome da trilha:');if(!name){return go('trilhas')}
+ const t=newTrail(name.trim(),'');S.trails.push(t);S.cur=t.id;save();go('editar');toast('Marque o INÍCIO e depois os pontos','warn')}
+$('#tnew').onclick=newTrailFlow;
+function resetRun(id){if(!confirm('Zerar o progresso (pontos batidos) desta trilha?'))return;const t=S.trails.find(x=>x.id===id);t.run={dir:'ida',done:{ida:{},volta:{}},act:{}};save();renderTrails()}
+function delTrail(id){const t=S.trails.find(x=>x.id===id);if(!confirm(`Apagar "${t.name}" e suas gravações?`))return;S.trails=S.trails.filter(x=>x.id!==id);if(S.cur===id)S.cur=S.trails[0]?.id||null;save();renderTrails()}
+function brief(id){const t=S.trails.find(x=>x.id===id),L=labels(t),objs=t.pts.filter(p=>p.action),dg=t.hz.filter(h=>h.kind==='danger'),wt=t.hz.filter(h=>h.kind==='water'),len=trailLen(t);
+ modal(`<h2>▌ORDEM DE MISSÃO</h2><p style="font-size:16px;color:var(--txt)">${esc(t.name)}</p>${t.desc?`<p style="color:var(--dim)">${esc(t.desc)}</p>`:''}
+ <p><b style="color:var(--amber)">DISTÂNCIA (reta entre pontos):</b> ${fmtD(len)} · ida e volta ${fmtD(len*2)}</p>
+ <p><b style="color:var(--amber)">TEMPO ESTIMADO:</b> ${fmtT(len/3.5*3600)} só ida (3,5 km/h)</p>
+ <p><b style="color:var(--amber)">PONTOS:</b> ${t.pts.map(p=>L[p.id]).join(' → ')||'—'}</p>
+ ${objs.length?`<p><b style="color:var(--amber)">AÇÕES:</b></p><ul>${objs.map(p=>`<li>${L[p.id]} ${esc(p.name)}: ${esc(p.action)}</li>`).join('')}</ul>`:''}
+ ${dg.length?`<p><b style="color:#ff7a66">PERIGOS (${dg.length}):</b></p><ul>${dg.map(h=>`<li>${esc(h.note)||'sem descrição'}</li>`).join('')}</ul>`:''}
+ ${wt.length?`<p><b style="color:var(--cy)">ÁGUA:</b> ${wt.length} ponto(s) marcado(s)</p>`:''}
+ <div class="row"><button class="b pri" onclick="startMission('${id}')">INICIAR MISSÃO</button><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
+function startMission(id){closeModal();openT(id,'mapa');startGps();setTimeout(fit,300)}
+function report(id){const t=S.trails.find(x=>x.id===id);
+ modal(`<h2>▌RELATÓRIO — ${esc(t.name)}</h2>${t.tracks.length?t.tracks.slice().reverse().map(k=>{const d=pathLen(k.pts),ms=k.end-k.start;
+  return `<div class="card"><p><b style="color:var(--amber)">${new Date(k.start).toLocaleDateString('pt-BR')}</b> ${hhmm(k.start)}–${hhmm(k.end)} · ${k.dir==='volta'?'VOLTA':'IDA'}</p>
+  <p>Distância ${fmtD(d)} · tempo ${fmtT(ms)} · ritmo ${(ms/60000/(d/1000||1)).toFixed(1)} min/km</p>
+  ${k.hits.length?`<p>${k.hits.map(h=>`${h.l} ${hhmm(h.t)}`).join(' · ')}</p>`:''}
+  <div class="row"><button class="b sm" onclick="exportTrack('${t.id}','${k.id}')">GPX DO PERCURSO</button><button class="b red sm" onclick="delTrack('${t.id}','${k.id}')">APAGAR</button></div></div>`}).join(''):'<p>Nenhuma gravação ainda. Use o botão REC no mapa durante a trilha.</p>'}
+ <div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
+function delTrack(tid,kid){if(!confirm('Apagar gravação?'))return;const t=S.trails.find(x=>x.id===tid);t.tracks=t.tracks.filter(k=>k.id!==kid);save();report(tid)}
+
+// ================= GPX / COMPARTILHAR / IMPORTAR =================
+const X=s=>String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const SYM={water:'Drinking Water',danger:'Danger Area',shelter:'Campground',exit:'Exit'};
+function gpxTrail(t){const L=labels(t);
+ return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="TRILHA NAV" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${X(t.name)}</name></metadata>\n`+
+ t.pts.map(p=>`<wpt lat="${p.ll[1]}" lon="${p.ll[0]}"><name>${X(L[p.id]+' '+p.name)}</name><desc>${X(p.action)}</desc><sym>Flag, Blue</sym></wpt>`).join('\n')+'\n'+
+ t.hz.map(h=>`<wpt lat="${h.ll[1]}" lon="${h.ll[0]}"><name>${X(HK[h.kind][1]+' '+h.note)}</name><sym>${SYM[h.kind]}</sym></wpt>`).join('\n')+
+ `\n<trk><name>${X(t.name)}</name><trkseg>\n${t.pts.map(p=>`<trkpt lat="${p.ll[1]}" lon="${p.ll[0]}"></trkpt>`).join('\n')}\n</trkseg></trk>\n</gpx>`}
+function gpxTrack(t,k){return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="TRILHA NAV" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>${X(t.name)} ${new Date(k.start).toLocaleDateString('pt-BR')}</name><trkseg>\n${k.pts.map(p=>`<trkpt lat="${p[1]}" lon="${p[0]}"><time>${new Date(p[2]).toISOString()}</time></trkpt>`).join('\n')}\n</trkseg></trk>\n</gpx>`}
+async function outFile(name,text,mime,share){const f=new File([text],name,{type:mime});
+ if(share&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name});return}catch(e){if(e.name==='AbortError')return}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+const safe=s=>s.replace(/[^\w\-]+/g,'_');
+function exportGpx(id,share){const t=S.trails.find(x=>x.id===id);if(t.pts.length<2)return toast('Marque ao menos 2 pontos','warn');outFile(safe(t.name)+'.gpx',gpxTrail(t),'application/gpx+xml',share)}
+function exportTrack(tid,kid){const t=S.trails.find(x=>x.id===tid),k=t.tracks.find(x=>x.id===kid);outFile(safe(t.name)+'_percurso.gpx',gpxTrack(t,k),'application/gpx+xml',0)}
+$('#timp').onclick=()=>$('#file').click();$('#bkimp').onclick=()=>$('#file').click();
+$('#file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const txt=await f.text();
+ try{if(/\.gpx$/i.test(f.name)||txt.trim().startsWith('<'))importGpx(txt,f.name.replace(/\.gpx$/i,''));else importJson(JSON.parse(txt))}catch(err){toast('Arquivo inválido','bad')}};
+function importJson(j){const arr=j.trails||[j];arr.forEach(t=>{if(!t.pts)return;t.id=uid();t.run={dir:'ida',done:{ida:{},volta:{}},act:{}};t.tracks=t.tracks||[];S.trails.push(t)});save();renderTrails();toast('IMPORTADO','warn')}
+function importGpx(txt,name){const d=new DOMParser().parseFromString(txt,'application/xml');
+ const g=n=>[...d.getElementsByTagName(n)].map(e=>[+e.getAttribute('lon'),+e.getAttribute('lat'),e.getElementsByTagName('name')[0]?.textContent||'']);
+ let w=g('wpt'),line=g('rtept');if(!line.length)line=g('trkpt');let pts=[];
+ if(w.length)pts=w;else if(line.length){const n=Math.min(12,line.length);for(let i=0;i<n;i++)pts.push(line[Math.round(i*(line.length-1)/(n-1))])}
+ if(!pts.length)return toast('GPX sem pontos','bad');
+ const t=newTrail(name||'Importada','Importada de GPX',pts.map((p,i)=>[i===0?'start':i===pts.length-1?'end':'wp',p[2]||'Ponto '+(i+1),'',[p[0],p[1]]]));
+ S.trails.push(t);save();renderTrails();toast(`IMPORTADA: ${pts.length} pontos`,'warn')}
+$('#bkexp').onclick=()=>outFile('trilhas_backup.trilha',JSON.stringify({trails:S.trails}),'application/json',1);
+
+// ================= AJUSTES / OFFLINE =================
+function renderSettings(){$('#cRad').value=S.cfg.radius;$('#cUnit').value=S.cfg.unit;tileCount()}
+$('#cRad').onchange=e=>{S.cfg.radius=Math.max(5,Math.min(200,+e.target.value||30));save()};
+$('#cUnit').onchange=e=>{S.cfg.unit=e.target.value;save()};
+async function tileCount(){try{const c=await caches.open('tiles-v1');$('#dlst').textContent=(await c.keys()).length+' quadros guardados no aparelho'}catch(e){$('#dlst').textContent='Offline indisponível aqui (precisa de HTTPS ou localhost).'}}
+function tilesFor(b,z){const n=2**z,x=lon=>Math.floor((lon+180)/360*n),y=lat=>{const r=rad(lat);return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n)};
+ const out=[];for(let i=x(b.getWest());i<=x(b.getEast());i++)for(let j=y(b.getNorth());j<=y(b.getSouth());j++)out.push(`https://a.tile.opentopomap.org/${z}/${i}/${j}.png`);return out}
+$('#dlmap').onclick=async()=>{if(!('caches' in window))return toast('Sem suporte offline','bad');
+ const b=map.getBounds();let urls=[];for(let z=12;z<=15;z++)urls=urls.concat(tilesFor(b,z));
+ if(urls.length>2500)return toast(`Região grande (${urls.length} quadros). Dê mais zoom na área da trilha.`,'warn');
+ if(!confirm(`Baixar ${urls.length} quadros (~${Math.round(urls.length*.03)} MB)?`))return;
+ const c=await caches.open('tiles-v1');let n=0,i=0;const st=$('#dlst');
+ const worker=async()=>{while(i<urls.length){const u=urls[i++];try{if(!(await c.match(u))){const r=await fetch(u);if(r.ok)await c.put(u,r)}}catch(e){}st.textContent=`Baixando… ${++n}/${urls.length}`}};
+ await Promise.all([1,2,3,4,5,6].map(worker));tileCount();toast('MAPA BAIXADO ✔','warn')};
+$('#clrmap').onclick=async()=>{if(confirm('Apagar mapas offline?')){await caches.delete('tiles-v1');tileCount()}};
+
+// ================= START =================
+setInterval(()=>$('#clock').textContent=new Date().toLocaleTimeString('pt-BR'),1000);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+addEventListener('resize',layoutTop);
+if(rec){startGps()}
+if(S.trails.length&&!T())S.cur=S.trails[0].id;
+go('mapa');
+</script></body></html>
