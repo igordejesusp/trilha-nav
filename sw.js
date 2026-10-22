@@ -1,5 +1,5 @@
 const SHELL='shell-v1',TILES='tiles-v1';
-const FILES=['./','index.html','manifest.json','maplibre-gl.js','maplibre-gl.css'];
+const FILES=['./','index.html','manifest.json','maplibre-gl.js','maplibre-gl.css','logo.png','icon-192.png','icon-512.png','apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{

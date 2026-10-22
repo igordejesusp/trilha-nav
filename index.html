@@ -4,6 +4,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0b0f0a">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TRILHA">
 <title>TRILHA // NAV</title>
 <link rel="stylesheet" href="maplibre-gl.css">
 <script src="maplibre-gl.js"></script>
@@ -15,6 +21,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 #map{position:absolute;inset:0}
 .hud{position:absolute;left:0;right:0;z-index:5;background:linear-gradient(var(--panel),#0e140d);border:1px solid var(--line);font-size:12px}
 #top{top:0;border-width:0 0 1px;padding:calc(6px + env(safe-area-inset-top)) 12px 6px;display:grid;grid-template-columns:1fr auto;gap:1px 10px}
+.brand{display:flex;align-items:center;gap:8px;min-width:0}.brand img{height:30px;width:auto;mix-blend-mode:screen;opacity:.9}
+#splash{position:absolute;inset:0;z-index:50;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .6s}
+#splash img{width:62%;max-width:300px;mix-blend-mode:screen}#splash b{color:var(--amber);letter-spacing:.35em;font-size:14px}#splash small{color:var(--dim);letter-spacing:.2em}
 #top b{color:var(--amber);letter-spacing:.15em;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #top .r{text-align:right;color:var(--dim)}
 #coord{color:var(--ok);font-size:13px}
@@ -109,7 +118,7 @@ textarea{min-height:60px}
 <div id="map"></div>
 
 <div id="top" class="hud">
-  <b id="tname">▌TRILHA // NAV</b><span class="r" id="clock">--:--:--</span>
+  <div class="brand"><img src="logo.png" alt=""><b id="tname">TRILHA // NAV</b></div><span class="r" id="clock">--:--:--</span>
   <span id="coord">GPS DESLIGADO</span><span class="r"><span id="recb">● REC</span> <span id="meta"></span></span>
 </div>
 <div id="nav" class="hud off">
@@ -163,6 +172,7 @@ textarea{min-height:60px}
 <div id="tabbar">
   <button data-v="trilhas"><i>▤</i>TRILHAS</button><button data-v="mapa" class="on"><i>◉</i>MAPA</button><button data-v="editar"><i>✚</i>EDITAR</button><button data-v="ajustes"><i>⚙</i>AJUSTES</button>
 </div>
+<div id="splash"><img src="logo.png" alt=""><b>TRILHA // NAV</b><small>NAVEGAÇÃO TÁTICA</small></div>
 <div id="modal"></div><div id="toast"></div>
 <input type="file" id="file" accept=".gpx,.json,.trilha" style="display:none">
 
@@ -269,7 +279,7 @@ function renderNav(){
  $('#naz').textContent=`AZ ${Math.round(b)}° / ${Math.round(b*17.7778)} mil`;
  $('#arrow').setAttribute('transform',`rotate(${b})`);
 }
-function renderTop(){const t=T();$('#tname').textContent=t?'▌'+t.name.toUpperCase():'▌TRILHA // NAV';
+function renderTop(){const t=T();$('#tname').textContent=t?t.name.toUpperCase():'TRILHA // NAV';
  $('#coord').textContent=me?(S.cfg.unit==='utm'?'UTM ':'')+fmtLL(me):(watchId!=null?'BUSCANDO SATÉLITES…':'GPS DESLIGADO');
  $('#meta').textContent=me&&meAcc?`±${Math.round(meAcc)} m`:'';$('#recb').classList.toggle('on',!!rec)}
 function renderAll(){renderTop();renderSheet();renderNav();$('#brec').classList.toggle('on',!!rec)}
@@ -449,4 +459,5 @@ addEventListener('resize',layoutTop);
 if(rec){startGps()}
 if(S.trails.length&&!T())S.cur=S.trails[0].id;
 go('mapa');
+setTimeout(()=>{const e=$('#splash');e.style.opacity=0;setTimeout(()=>e.remove(),700)},1500);
 </script></body></html>
