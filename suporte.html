@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="icon-192.png">
+<title>Suporte</title>
+<link rel="stylesheet" href="maplibre-gl.css">
+<script src="maplibre-gl.js"></script>
+<script src="live-config.js"></script>
+<style>
+:root{--bg:#000;--panel:#0d0d0d;--line:#2a2d26;--olive:#9bb05a;--red:#e0442f;--ok:#8fd14f;--txt:#f2f4ee;--dim:#8b9283;--f:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",Roboto,Inter,Arial,sans-serif}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--f);font-variant-numeric:tabular-nums;overflow:hidden}
+#map{position:absolute;inset:0}
+#bar{position:absolute;top:0;left:0;right:0;z-index:5;background:#080808;border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+#bar small{display:block;color:var(--dim);font-size:10px;letter-spacing:.14em}
+#bar b{font-size:17px;display:block}
+.logo{height:30px;mix-blend-mode:screen;opacity:.9}
+#chip{font-size:11px;font-weight:700;letter-spacing:.06em;padding:6px 10px;border:1px solid var(--line);border-radius:20px;white-space:nowrap}
+#chip.live{color:var(--ok);border-color:var(--ok)}
+#chip.late{color:#fff;border-color:#fff}
+#chip.lost{color:#ff7a66;border-color:var(--red)}
+#sosbar{position:absolute;top:calc(58px + env(safe-area-inset-top));left:8px;right:8px;z-index:6;background:#2a0c07;border:2px solid var(--red);color:#ff9a88;padding:10px 12px;font-weight:700;letter-spacing:.04em;display:none;animation:bl 1.2s infinite;border-radius:8px}
+@keyframes bl{50%{opacity:.55}}
+#card{position:absolute;left:0;right:0;bottom:0;z-index:5;background:#080808;border-top:1px solid var(--line);padding:12px 14px calc(14px + env(safe-area-inset-bottom));max-height:46vh;overflow:auto}
+#card .big{font-size:20px;font-weight:700}
+#card .row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
+#card .row span:first-child{color:var(--dim)}
+#card .row span:last-child{text-align:right}
+.btn{display:inline-block;margin:10px 8px 0 0;padding:10px 13px;border:1px solid var(--olive);color:var(--olive);background:#1b2210;text-decoration:none;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:.05em}
+.btn.red{border-color:var(--red);color:#ff9a88;background:#2a0c07}
+.emr{margin-top:10px;padding:10px;border:1px solid var(--red);border-radius:6px;background:#1a0906}
+.emr .k{color:#ff9a88;font-size:10px;letter-spacing:.12em}.emr .n{font-size:15px;margin:2px 0}.emr .d{color:var(--dim);font-size:12px}
+.me{width:20px;height:20px;border-radius:50%;background:var(--olive);border:3px solid #fff;box-shadow:0 0 0 10px rgba(155,176,90,.3)}
+.me.sos{background:var(--red);box-shadow:0 0 0 12px rgba(224,68,47,.35);animation:bl 1s infinite}
+.hz{width:26px;height:26px;display:grid;place-items:center;font-size:14px;font-weight:700;border:2px solid #fff;background:#8a1c10;border-radius:4px;color:#fff}
+#msg{position:absolute;inset:0;z-index:9;background:#000;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--dim);line-height:1.6}
+.maplibregl-ctrl-attrib{font-size:9px!important}
+</style></head><body>
+<div id="map"></div>
+<div id="bar"><div style="display:flex;align-items:center;gap:10px"><img class="logo" src="logo.png" alt=""><div><small>SUPORTE</small><b id="team">Equipe</b></div></div><span id="chip">CONECTANDO…</span></div>
+<div id="sosbar"></div>
+<div id="card"><div class="big" id="cTrail">Aguardando a primeira posição…</div><div id="cBody"></div></div>
+<div id="msg"></div>
+<script>
+const $=s=>document.querySelector(s),R=6371000,rad=d=>d*Math.PI/180;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function dist(a,b){const dl=rad(b[1]-a[1]),dn=rad(b[0]-a[0]);const x=Math.sin(dl/2)**2+Math.cos(rad(a[1]))*Math.cos(rad(b[1]))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+const fmtD=m=>m>=1000?(m/1000).toFixed(1)+' km':Math.round(m)+' m';
+function utm([lon,lat]){const a=6378137,f=1/298.257223563,k0=.9996,e2=f*(2-f),ep2=e2/(1-e2);
+ const z=Math.floor((lon+180)/6)+1,l0=rad((z-1)*6-180+3),φ=rad(lat),λ=rad(lon);
+ const N=a/Math.sqrt(1-e2*Math.sin(φ)**2),Tt=Math.tan(φ)**2,C=ep2*Math.cos(φ)**2,A=Math.cos(φ)*(λ-l0);
+ const M=a*((1-e2/4-3*e2**2/64-5*e2**3/256)*φ-(3*e2/8+3*e2**2/32+45*e2**3/1024)*Math.sin(2*φ)+(15*e2**2/256+45*e2**3/1024)*Math.sin(4*φ)-(35*e2**3/3072)*Math.sin(6*φ));
+ const E=k0*N*(A+(1-Tt+C)*A**3/6+(5-18*Tt+Tt*Tt+72*C-58*ep2)*A**5/120)+500000;
+ let Nn=k0*(M+N*Math.tan(φ)*(A*A/2+(5-Tt+9*C+4*C*C)*A**4/24+(61-58*Tt+Tt*Tt+600*C-330*ep2)*A**6/720));if(lat<0)Nn+=1e7;
+ return `${z}${'CDEFGHJKLMNPQRSTUVWX'[Math.floor((lat+80)/8)]} ${String(Math.round(E)).padStart(6,'0')} ${String(Math.round(Nn)).padStart(7,'0')}`}
+const ago=ms=>{const s=Math.max(0,Math.round(ms/1000));return s<60?s+' s':s<3600?Math.round(s/60)+' min':Math.floor(s/3600)+' h '+Math.round(s%3600/60)+' min'};
+const hhmm=t=>new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+const id=location.hash.slice(1);
+function msg(t){const m=$('#msg');m.style.display='flex';m.innerHTML=t}
+if(!id||!window.FB_URL)msg('Link inválido.<br>Peça para a equipe enviar o link do Suporte de novo.');
+
+const map=new maplibregl.Map({container:'map',center:[-48.27,-18.92],zoom:12,attributionControl:{compact:true},
+ style:{version:8,sources:{t:{type:'raster',tileSize:256,maxzoom:17,attribution:'© OpenTopoMap, OSM',tiles:['https://a.tile.opentopomap.org/{z}/{x}/{y}.png']}},
+ layers:[{id:'bg',type:'background',paint:{'background-color':'#000'}},{id:'t',type:'raster',source:'t',paint:{'raster-saturation':-.55,'raster-brightness-max':.6,'raster-contrast':.15}}]}});
+map.dragRotate.disable();map.touchZoomRotate.disableRotation();
+const meEl=document.createElement('div');meEl.className='me';const meMk=new maplibregl.Marker({element:meEl});
+let hMk=[],cur=null,ready=false,first=true,trk=[];
+const empty={type:'Feature',geometry:{type:'LineString',coordinates:[]}};
+map.on('load',()=>{ready=true;map.addSource('trk',{type:'geojson',data:empty});
+ map.addLayer({id:'trk',type:'line',source:'trk',paint:{'line-color':'#ffffff','line-width':3,'line-opacity':.9}});drawTrk();render()});
+function drawTrk(){if(ready)map.getSource('trk').setData({type:'Feature',geometry:{type:'LineString',coordinates:trk.map(p=>[p[0],p[1]])}})}
+
+function render(){
+ if(!cur){return}
+ $('#team').textContent=cur.team||'Equipe';
+ const chip=$('#chip');
+ if(cur.off){chip.className='';chip.textContent='COMPARTILHAMENTO ENCERRADO';$('#cTrail').textContent='A equipe parou de compartilhar.';$('#cBody').innerHTML='';$('#sosbar').style.display='none';return}
+ const age=Date.now()-cur.t;
+ chip.className=age<45000?'live':age<300000?'late':'lost';
+ chip.textContent=age<45000?'● AO VIVO':age<300000?'há '+ago(age):'SEM SINAL há '+ago(age);
+ $('#cTrail').textContent=cur.trail||'Em trilha';
+ const sb=$('#sosbar');
+ if(cur.sos){sb.style.display='block';sb.innerHTML=`SOS ACIONADO há ${ago(Date.now()-cur.sos)}<br><span style="font-weight:400">Ligue para a equipe. Posição abaixo.</span>`}else sb.style.display='none';
+ meEl.classList.toggle('sos',!!cur.sos);
+ if(cur.ll){meMk.setLngLat(cur.ll).addTo(map);if(first&&ready){first=false;map.jumpTo({center:cur.ll,zoom:15})}}
+ hMk.forEach(m=>m.remove());hMk=[];
+ [cur.hosp&&{...cur.hosp,k:'✚'}].filter(Boolean).forEach(h=>{if(!h.ll)return;const e=document.createElement('div');e.className='hz';e.textContent=h.k;hMk.push(new maplibregl.Marker({element:e}).setLngLat(h.ll).addTo(map))});
+ let h=`<div class="row"><span>Última posição</span><span>${hhmm(cur.t)} (há ${ago(age)})</span></div>`;
+ if(cur.total)h+=`<div class="row"><span>Progresso</span><span>${cur.done}/${cur.total} pontos · ${cur.dir==='volta'?'volta':'ida'}</span></div>`;
+ if(cur.next)h+=`<div class="row"><span>Próximo ponto</span><span>${esc(cur.next)}</span></div>`;
+ if(cur.ll)h+=`<div class="row"><span>Coordenada (UTM)</span><span>${utm(cur.ll)}</span></div><div class="row"><span>Precisão</span><span>±${cur.acc||'?'} m</span></div>`;
+ if(cur.bat!=null)h+=`<div class="row"><span>Bateria do celular</span><span>${cur.bat}%</span></div>`;
+ if(cur.sos&&cur.hosp)h+=`<div class="emr"><div class="k">HOSPITAL MAIS PRÓXIMO DA EQUIPE</div><div class="n">${esc(cur.hosp.name)}</div><div class="d">${fmtD(dist(cur.ll,cur.hosp.ll))} em linha reta</div><a class="btn red" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${cur.hosp.ll[1]},${cur.hosp.ll[0]}">ROTA ATÉ O HOSPITAL</a></div>`;
+ if(cur.sos&&cur.venom)h+=`<div class="emr"><div class="k">SORO COBRA / ESCORPIÃO</div><div class="n">${esc(cur.venom.name)}</div><a class="btn red" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${cur.venom.ll[1]},${cur.venom.ll[0]}">ROTA</a></div>`;
+ if(cur.ll)h+=`<a class="btn" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${cur.ll[1]},${cur.ll[0]}">COMO CHEGAR ATÉ A EQUIPE</a><a class="btn" href="#" onclick="map.flyTo({center:cur.ll,zoom:16});return false">CENTRALIZAR</a>`;
+ $('#cBody').innerHTML=h;
+}
+let es;
+function connect(){if(!id||!window.FB_URL)return;
+ es=new EventSource(`${FB_URL}/live/${id}/cur.json`);
+ es.addEventListener('put',e=>{const m=JSON.parse(e.data);if(m.path==='/')cur=m.data;else if(cur)cur={...cur,[m.path.slice(1)]:m.data};render();if(!cur&&!$('#chip').dataset.wait){$('#chip').dataset.wait=1;$('#chip').textContent='AGUARDANDO…'}});
+ es.addEventListener('patch',e=>{const m=JSON.parse(e.data);cur={...(cur||{}),...m.data};render()});
+ es.onerror=()=>{es.close();$('#chip').className='lost';$('#chip').textContent='RECONECTANDO…';setTimeout(connect,4000)}}
+async function loadTrk(){try{const r=await fetch(`${FB_URL}/live/${id}/trk.json`);const j=await r.json();if(j)trk=Object.values(j).sort((a,b)=>a[2]-b[2]);drawTrk()}catch(e){}}
+if(id&&window.FB_URL){connect();loadTrk();setInterval(loadTrk,20000);setInterval(render,5000)}
+</script></body></html>

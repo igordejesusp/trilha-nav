@@ -13,6 +13,7 @@
 <title>TRILHA // NAV</title>
 <link rel="stylesheet" href="maplibre-gl.css">
 <script src="maplibre-gl.js"></script>
+<script src="live-config.js"></script>
 <style>
 :root{--bg:#000;--panel:#0d0d0d;--line:#2a2d26;--amber:#9bb05a;--olive:#9bb05a;--red:#e0442f;--ok:#8fd14f;--cy:#4cc9ff;--txt:#f2f4ee;--dim:#8b9283;--s:1;--f:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",Roboto,Inter,Arial,sans-serif}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
@@ -192,8 +193,24 @@ a.b{text-decoration:none;display:inline-block}
     <div class="row"><button class="b sm" id="bkexp">EXPORTAR TUDO</button><button class="b sm" id="bkimp">IMPORTAR BACKUP</button></div></div>
 </div>
 
+<div class="view" id="vSuporte">
+  <h1>▌SUPORTE</h1>
+  <p style="color:var(--dim);font-size:13px;line-height:1.5">Quem receber o link vê sua posição em tempo real e o alerta de SOS, num navegador comum. Não precisa instalar nada.</p>
+  <div class="sec">EQUIPE</div>
+  <div class="set col"><div><b>Nome da equipe</b><small>Aparece na página de quem acompanha</small></div><input id="lvTeam" placeholder="Nome da equipe"></div>
+  <div class="sec">COMPARTILHAMENTO</div>
+  <div class="set"><div><b>Enviar minha posição</b><small id="lvState">Desligado</small></div><button class="b pri" id="lvToggle">LIGAR</button></div>
+  <div class="set col"><div><b>Link para o suporte</b><small id="lvLink" style="word-break:break-all">Ligue o compartilhamento para gerar.</small></div><div class="row"><button class="b pri sm" id="lvShare">ENVIAR LINK</button><button class="b sm" id="lvCopy">COPIAR</button><button class="b red sm" id="lvNew">GERAR NOVO LINK</button></div></div>
+  <div class="set"><div><b>Manter tela ligada</b><small>Evita o aparelho pausar o envio (gasta mais bateria)</small></div><div class="ctl"><select id="lvWake"><option value="1">Sim</option><option value="0">Não</option></select></div></div>
+  <div class="sec">SOS</div>
+  <div class="set"><div><b>Alerta de SOS para o suporte</b><small id="lvSos">Inativo</small></div><button class="b red" id="lvSosBtn">ACIONAR</button></div>
+  <div class="sec">BOM SABER</div>
+  <div class="step"><i><span>1</span></i><div>Só envia com <b>sinal de celular</b>. Sem sinal, guarda a última posição e envia quando voltar.</div></div>
+  <div class="step"><i><span>2</span></i><div>Mantenha o app <b>aberto</b> na tela. O celular pode pausar o GPS se o app for para segundo plano.</div></div>
+  <div class="step"><i><span>3</span></i><div>Qualquer pessoa com o link vê sua posição. <b>Gere um novo link</b> ao terminar a trilha.</div></div>
+</div>
 <div id="tabbar">
-  <button data-v="trilhas"><i>▤</i>TRILHAS</button><button data-v="mapa" class="on"><i>◉</i>MAPA</button><button data-v="editar"><i>✚</i>EDITAR</button><button data-v="ajustes"><i>⚙</i>AJUSTES</button>
+  <button data-v="trilhas"><i>▤</i>TRILHAS</button><button data-v="mapa" class="on"><i>◉</i>MAPA</button><button data-v="editar"><i>✚</i>EDITAR</button><button data-v="suporte"><i>◎</i>SUPORTE</button><button data-v="ajustes"><i>⚙</i>AJUSTES</button>
 </div>
 <div id="splash"><img src="logo.png" alt=""><b>TRILHA // NAV</b><small>NAVEGAÇÃO TÁTICA</small></div>
 <div id="modal"></div><div id="toast"></div>
@@ -312,11 +329,11 @@ function renderAll(){renderTop();renderSheet();renderNav();$('#brec').classList.
 
 function go(n){
  tab=n;document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.v===n));
- $('#vTrilhas').classList.toggle('on',n==='trilhas');$('#vAjustes').classList.toggle('on',n==='ajustes');
+ $('#vTrilhas').classList.toggle('on',n==='trilhas');$('#vSuporte').classList.toggle('on',n==='suporte');$('#vAjustes').classList.toggle('on',n==='ajustes');
  const isMap=n==='mapa'||n==='editar';
  $('#sheet').style.display=n==='mapa'?'':'none';$('#etool').classList.toggle('on',n==='editar');
  $('#btns').style.display=isMap?'flex':'none';$('#top').style.display=isMap?'':'none';
- if(n==='trilhas')renderTrails();if(n==='ajustes')renderSettings();
+ if(n==='trilhas')renderTrails();if(n==='suporte')renderLive();if(n==='ajustes')renderSettings();
  if(n==='editar'&&!T()){tab='trilhas';return newTrailFlow()}
  if(isMap){setTimeout(()=>map.resize(),50);drawMap();renderAll();layoutTop()}
 }
@@ -384,7 +401,7 @@ function onPos(ll,acc){
    else toast(`${labels(t)[nx.id]} BATIDO ✔`)}
   t.hz.forEach(h=>{if(h.kind==='danger'&&!warned.has(h.id)&&dist(ll,h.ll)<=100){warned.add(h.id);toast(`! PERIGO A ${Math.round(dist(ll,h.ll))} m<br>${esc(h.note)}`,'bad')}})}
  if(follow)map.easeTo({center:ll,duration:600});
- renderAll();
+ liveSend(false);renderAll();
 }
 $('#bfol').onclick=e=>{follow=!follow;e.target.classList.toggle('on',follow);if(follow){startGps();if(me)map.easeTo({center:me,zoom:Math.max(map.getZoom(),16)})}};
 $('#bfit').onclick=fit;
@@ -417,13 +434,55 @@ function emSection(ref){const t=T(),H=((t&&t.emerg&&t.emerg.hosp)||[]).map(h=>({
  return `<h2 style="margin-top:14px">▌ONDE IR</h2>${row('TORÇÃO · FRATURA · MAL-ESTAR',H[0],'Sem hospital salvo. Em EDITAR toque em ✚ HOSPITAIS (com internet).')}${row('COBRA · ESCORPIÃO',V?{...V}:null,'Local do soro não definido. Veja em AJUSTES → Emergência.')}`}
 function showEm(lon,lat){closeModal();go('mapa');map.flyTo({center:[lon,lat],zoom:14})}
 
+// ================= SUPORTE (posição ao vivo) =================
+S.cfg.live=S.cfg.live||{on:false,id:null,team:'',wake:'1',sos:null,last:null};
+const LV=()=>S.cfg.live;
+let lastSend=0,lastTrk=null,sendErr='',wl=null,bat=null;
+if(navigator.getBattery)navigator.getBattery().then(b=>bat=b).catch(()=>{});
+const newId=()=>{const a=new Uint8Array(16);crypto.getRandomValues(a);return'k'+[...a].map(b=>b.toString(16).padStart(2,'0')).join('')};
+const liveUrl=()=>LV().id?location.origin+location.pathname.replace(/[^/]*$/,'')+'suporte.html#'+LV().id:'';
+function livePayload(){const L=LV(),t=T(),o=t?ordered(t):[],dn=t?t.run.done[t.run.dir]:{},nx=nextPt();
+ const p={t:Date.now(),team:L.team||'Equipe',ll:me,acc:Math.round(meAcc||0),trail:t?t.name:'',done:o.filter(x=>dn[x.id]).length,total:o.length,dir:t?t.run.dir:'ida',next:nx&&t?labels(t)[nx.id]+' '+nx.name:''};
+ if(bat)p.bat=Math.round(bat.level*100);
+ if(L.sos){p.sos=L.sos;const H=((t&&t.emerg&&t.emerg.hosp)||[]).slice().sort((a,b)=>dist(me,a.ll)-dist(me,b.ll))[0];if(H)p.hosp={name:H.name,ll:H.ll};if(S.cfg.venom)p.venom={name:S.cfg.venom.name,ll:S.cfg.venom.ll}}
+ return p}
+async function liveSend(force){const L=LV();if(!L.on||!L.id||!me||!window.FB_URL)return;const now=Date.now();
+ if(!force&&now-lastSend<(L.sos?8000:20000))return;lastSend=now;
+ try{const base=`${FB_URL}/live/${L.id}`;
+  const r=await fetch(base+'/cur.json',{method:'PUT',body:JSON.stringify(livePayload())});if(!r.ok)throw r.status;
+  if(!lastTrk||dist(lastTrk,me)>=25){lastTrk=[...me];fetch(base+'/trk.json',{method:'POST',body:JSON.stringify([me[0],me[1],now])}).catch(()=>{})}
+  L.last=now;sendErr=''}catch(e){sendErr='Sem sinal. Envio assim que voltar.'}
+ save();renderLive()}
+async function wake(on){try{if(on&&LV().wake==='1'&&'wakeLock'in navigator&&!wl){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>wl=null)}else if(!on&&wl){wl.release();wl=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&LV().on)wake(true)});
+function liveOn(){const L=LV();if(!window.FB_URL)return toast('Servidor do suporte ainda não configurado','warn');
+ if(!L.id)L.id=newId();L.on=true;save();startGps();wake(true);liveSend(true);renderLive()}
+function liveOff(){const L=LV();L.on=false;L.sos=null;save();wake(false);if(window.FB_URL&&L.id)fetch(`${FB_URL}/live/${L.id}/cur.json`,{method:'PUT',body:JSON.stringify({off:true,t:Date.now(),team:L.team})}).catch(()=>{});renderLive()}
+function sosStart(){const L=LV();if(!window.FB_URL)return toast('Servidor do suporte ainda não configurado','warn');if(!L.id)L.id=newId();L.on=true;L.sos=Date.now();save();startGps();wake(true);liveSend(true);renderLive();toast('SOS ENVIADO AO SUPORTE<br>(precisa de sinal)','bad')}
+function sosStop(){LV().sos=null;save();liveSend(true);renderLive();closeModal()}
+function renderLive(){const L=LV();if(!$('#lvState'))return;
+ $('#lvTeam').value=L.team||'';$('#lvWake').value=L.wake;
+ $('#lvToggle').textContent=L.on?'DESLIGAR':'LIGAR';$('#lvToggle').className='b '+(L.on?'red':'pri');
+ $('#lvState').textContent=!window.FB_URL?'Servidor não configurado':L.on?(sendErr||(L.last?'Ligado · última posição enviada às '+hhmm(L.last):me?'Ligado · enviando…':'Ligado · aguardando o GPS')):'Desligado';
+ $('#lvLink').textContent=liveUrl()||'Ligue o compartilhamento para gerar.';
+ $('#lvSos').textContent=L.sos?'ATIVO desde '+hhmm(L.sos)+'. O suporte está vendo o alerta.':'Inativo';
+ $('#lvSosBtn').textContent=L.sos?'CANCELAR SOS':'ACIONAR';$('#lvSosBtn').className='b '+(L.sos?'pri':'red')}
+$('#lvTeam').oninput=e=>{LV().team=e.target.value.trim();save()};
+$('#lvWake').onchange=e=>{LV().wake=e.target.value;save();wake(LV().on)};
+$('#lvToggle').onclick=()=>LV().on?liveOff():liveOn();
+$('#lvSosBtn').onclick=()=>LV().sos?sosStop():sosStart();
+$('#lvShare').onclick=()=>{const u=liveUrl();if(!u)return toast('Ligue o compartilhamento primeiro','warn');const txt=`Acompanhe nossa trilha ao vivo${LV().team?' ('+LV().team+')':''}: ${u}`;navigator.share?navigator.share({text:txt}).catch(()=>{}):navigator.clipboard.writeText(txt).then(()=>toast('LINK COPIADO','warn'))};
+$('#lvCopy').onclick=()=>{const u=liveUrl();if(!u)return toast('Ligue o compartilhamento primeiro','warn');navigator.clipboard&&navigator.clipboard.writeText(u).then(()=>toast('LINK COPIADO','warn'),()=>prompt('Copie:',u))};
+$('#lvNew').onclick=()=>{if(!confirm('Gerar novo link? O link antigo deixa de funcionar.'))return;const L=LV();if(window.FB_URL&&L.id)fetch(`${FB_URL}/live/${L.id}.json`,{method:'DELETE'}).catch(()=>{});L.id=newId();L.sos=null;lastTrk=null;save();if(L.on)liveSend(true);renderLive()};
+setInterval(()=>liveSend(false),5000);
+
 // ================= SOS =================
 $('#bsos').onclick=()=>{
  if(!me){startGps();const t0=T(),r0=(t0&&t0.pts[0]&&t0.pts[0].ll)||[map.getCenter().lng,map.getCenter().lat];return modal(`<h2 style="color:#ff7a66">▌SOS</h2><p>Sem posição ainda. Ligando o GPS… aguarde e toque SOS de novo (céu aberto). Distâncias abaixo são a partir do início da trilha.</p>${emSection(r0)}<div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
  const ll=me,txt=`SOS — preciso de ajuda.\nPosição: ${utm(ll)}\nLat/Lon: ${ll[1].toFixed(6)}, ${ll[0].toFixed(6)}\nhttps://maps.google.com/?q=${ll[1].toFixed(6)},${ll[0].toFixed(6)}`;
  window._sos=txt;
  modal(`<h2 style="color:#ff7a66">▌SOS — MINHA POSIÇÃO</h2><div class="big">${utm(ll)}</div><p>Lat/Lon: ${ll[1].toFixed(6)}, ${ll[0].toFixed(6)}</p><p style="color:var(--dim)">Precisão ±${Math.round(meAcc)} m · ${hhmm(Date.now())}</p>
- ${emSection(ll)}<div class="row"><button class="b pri" onclick="sosShare()">ENVIAR (WHATSAPP…)</button><button class="b" onclick="sosCopy()">COPIAR</button><button class="b" onclick="closeModal()">FECHAR</button></div>`)};
+ ${emSection(ll)}<div class="row"><button class="b red" onclick="${LV().sos?'sosStop()':'sosStart()'}">${LV().sos?'CANCELAR SOS DO SUPORTE':'AVISAR O SUPORTE'}</button><button class="b pri" onclick="sosShare()">ENVIAR (WHATSAPP…)</button><button class="b" onclick="sosCopy()">COPIAR</button><button class="b" onclick="closeModal()">FECHAR</button></div>`)};
 function sosShare(){if(navigator.share)navigator.share({text:window._sos}).catch(()=>{});else sosCopy()}
 function sosCopy(){navigator.clipboard&&navigator.clipboard.writeText(window._sos).then(()=>toast('COPIADO','warn'),()=>prompt('Copie:',window._sos))}
 
@@ -516,6 +575,7 @@ setInterval(()=>$('#clock').textContent=new Date().toLocaleTimeString('pt-BR'),1
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 addEventListener('resize',layoutTop);
 if(rec){startGps()}
+if(LV().on){startGps();wake(true)}
 if(S.trails.length&&!T())S.cur=S.trails[0].id;
 go('mapa');
 setTimeout(()=>{const e=$('#splash');e.style.opacity=0;setTimeout(()=>e.remove(),700)},1500);
