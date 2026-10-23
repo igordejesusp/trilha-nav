@@ -129,6 +129,7 @@ textarea{min-height:60px}
 .emr{border:1px solid var(--line);padding:9px;margin:8px 0;background:#0a0a0a}
 .emr .k{color:var(--dim);font-size:10px;letter-spacing:.08em}.emr .n{font-size:14px;margin:2px 0}.emr .d{color:#fff;font-weight:600;font-size:12px;margin-bottom:6px}
 a.b{text-decoration:none;display:inline-block}
+input[type=range]{accent-color:var(--amber);width:100%}
 #avBtn{position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:9;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--amber);background:#111 center/cover no-repeat;color:#fff;font-weight:700;font-size:15px;overflow:hidden;padding:0}
 #top{padding-right:56px!important}
 .pop.fx{position:fixed;top:calc(52px + env(safe-area-inset-top));right:10px;z-index:30}
@@ -529,7 +530,7 @@ const core=t=>JSON.stringify([t.name,t.desc||'',t.pts,t.hz,t.emerg||null]);
 const r5=n=>Math.round(n*1e5)/1e5;
 const packAct=a=>({id:a.id,name:a.name,trailId:a.trailId||'',trail:a.trail||'',start:a.start,end:a.end,dir:a.dir||'ida',pts:a.pts.map(p=>[r5(p[0]),r5(p[1]),p[2]]),hits:a.hits||[],photos:a.photos||[],rev:a.rev||1});
 const unpackAct=a=>({...a,trailId:a.trailId||null,pts:a.pts||[],hits:a.hits||[],photos:a.photos||[],sh:a.rev||1});
-const profCore=()=>({name:S.profile.name||'',bio:S.profile.bio||'',photo:S.profile.photo||'',cover:S.profile.cover||'',rev:S.profile.rev||1});
+const profCore=()=>({name:S.profile.name||'',bio:S.profile.bio||'',photo:S.profile.photo||'',cover:'',rev:S.profile.rev||1});
 let pushing=false,syncErr='',pushT=null,syncTimer=null;
 function startSync(){if(!syncTimer){syncTimer=setInterval(pushChanges,20000);addEventListener('online',pushChanges)}}
 const pushSoon=()=>{clearTimeout(pushT);pushT=setTimeout(pushChanges,1500)};
@@ -538,7 +539,7 @@ async function pushChanges(){if(!S.user||!window.FB_URL||pushing||!navigator.onL
  for(const id of S.delA.slice()){await dbu('acts/'+id,'DELETE');S.delA=S.delA.filter(x=>x!==id)}
  for(const t of S.trails){if(t.demo)continue;const h=core(t);if(!t.sync||t.sync.hash!==h){const upd=Date.now();await dbu('trails/'+t.id,'PUT',{name:t.name,desc:t.desc||'',pts:t.pts,hz:t.hz,emerg:t.emerg||null,upd});t.sync={hash:h,upd}}}
  for(const a of S.acts){if(a.sh!==(a.rev||1)){await dbu('acts/'+a.id,'PUT',packAct(a));a.sh=a.rev||1}}
- if(S.profile.name||S.profile.bio||S.profile.photo||S.profile.cover){if(S.profSh!==(S.profile.rev||1)){await dbu('profile','PUT',profCore());S.profSh=S.profile.rev||1}}
+ if(S.profile.name||S.profile.bio||S.profile.photo){if(S.profSh!==(S.profile.rev||1)){await dbu('profile','PUT',profCore());S.profSh=S.profile.rev||1}}
  S.syncAt=Date.now();syncErr=''}catch(e){syncErr=e.message==='SESSAO'?'Sessão expirada. Entre de novo.':'Sem conexão com a nuvem'}finally{pushing=false;save();if(tab==='perfil')renderProfile()}}
 async function syncAll(){if(!S.user||!window.FB_URL)return;try{
  const [rt,ra,rp]=await Promise.all([dbu('trails'),dbu('acts'),dbu('profile')]);
@@ -548,7 +549,7 @@ async function syncAll(){if(!S.user||!window.FB_URL)return;try{
   if(!l){const t=newTrail(r.name,r.desc||'');t.id=id;t.pts=r.pts||[];t.hz=r.hz||[];if(r.emerg)t.emerg=r.emerg;t.sync={hash:core(t),upd:r.upd||0};S.trails.push(t)}
   else if((r.upd||0)>(l.sync?l.sync.upd:0)&&l.sync&&core(l)===l.sync.hash){l.name=r.name;l.desc=r.desc||'';l.pts=r.pts||[];l.hz=r.hz||[];l.emerg=r.emerg||undefined;l.sync={hash:core(l),upd:r.upd}}}
  const A=ra||{};for(const id in A){if(S.delA.includes(id))continue;if(!S.acts.find(a=>a.id===id))S.acts.push(unpackAct(A[id]))}
- if(rp&&(rp.rev||1)>(S.profile.rev||0)){S.profile={name:rp.name||'',bio:rp.bio||'',photo:rp.photo||'',cover:rp.cover||'',rev:rp.rev||1};S.profSh=S.profile.rev}
+ if(rp&&(rp.rev||1)>(S.profile.rev||0)){S.profile={name:rp.name||'',bio:rp.bio||'',photo:rp.photo||'',cover:'',rev:rp.rev||1};S.profSh=S.profile.rev}
  save();await pushChanges();if(!T()&&S.trails.length)S.cur=S.trails[0].id;save();renderAv();if(tab==='perfil')renderProfile();if(tab==='trilhas')renderTrails()
 }catch(e){syncErr=e.message==='SESSAO'?'Sessão expirada. Entre de novo.':'Sem conexão com a nuvem';if(tab==='perfil')renderProfile()}}
 
@@ -578,7 +579,7 @@ function routeSvg(pts,w,h,pad){pad=pad||8;if(!pts||pts.length<2)return`<svg view
  const P=q.map(p=>[(ox+(p[0]*k-x0)*sc).toFixed(1),(h-(oy+(p[1]-y0)*sc)).toFixed(1)]);
  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%"><polyline points="${P.map(z=>z.join(',')).join(' ')}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${P[0][0]}" cy="${P[0][1]}" r="4.5" fill="#9bb05a"/><circle cx="${P[P.length-1][0]}" cy="${P[P.length-1][1]}" r="4.5" fill="#fff"/></svg>`}
 const actStats=a=>{const d=pathLen(a.pts),ms=a.end-a.start;return{d,ms,pace:ms/60000/((d/1000)||1)}};
-function actCard(a){const k=actStats(a);return `<div class="ac" onclick="actDetail('${a.id}')"><div class="mini">${routeSvg(a.pts,96,72,6)}</div><div style="min-width:0"><h3>${esc(a.name)}</h3><div class="m"><b>${fmtD(k.d)}</b> · ${fmtT(k.ms)}<br>${new Date(a.start).toLocaleDateString('pt-BR')} ${hhmm(a.start)}${a.photos&&a.photos.length?' · '+a.photos.length+' foto(s)':''}</div></div></div>`}
+function actCard(a){const k=actStats(a);return `<div class="ac" onclick="actDetail('${a.id}')"><div class="mini">${routeSvg(a.pts,96,72,6)}</div><div style="min-width:0"><h3>${esc(a.name)}</h3><div class="m"><b>${fmtD(k.d)}</b> · ${fmtT(k.ms)}<br>${new Date(a.start).toLocaleDateString('pt-BR')} ${hhmm(a.start)}</div>${a.photos&&a.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${a.photos.slice(0,3).map(f=>`<img src="${f}" style="height:34px;border-radius:4px">`).join('')}${a.photos.length>3?`<span class="m" style="align-self:center">+${a.photos.length-3}</span>`:''}</div>`:''}</div></div>`}
 function actDetail(id){const a=S.acts.find(x=>x.id===id);if(!a)return;const k=actStats(a);
  modal(`<h2>${esc(a.name)}</h2><div style="height:190px;background:#0d0d0d;border-radius:8px;overflow:hidden">${routeSvg(a.pts,320,190,14)}</div>
  <div class="stats" style="margin:10px 0"><div><b>${fmtD(k.d)}</b><small>DISTÂNCIA</small></div><div><b>${fmtT(k.ms)}</b><small>TEMPO</small></div><div><b>${k.pace.toFixed(1)}</b><small>MIN/KM</small></div><div><b>${(a.hits||[]).length}</b><small>PONTOS</small></div></div>
@@ -591,15 +592,32 @@ function renameAct(id){const a=S.acts.find(x=>x.id===id),n=prompt('Nome da ativi
 function delAct(id){if(!confirm('Apagar esta atividade?'))return;S.acts=S.acts.filter(a=>a.id!==id);S.delA.push(id);save();pushSoon();closeModal();if(tab==='perfil')renderProfile()}
 function delPhoto(id,i){if(!confirm('Remover esta foto?'))return;const a=S.acts.find(x=>x.id===id);a.photos.splice(i,1);bump(a);actDetail(id)}
 async function imgData(file,max,q){const bm=await createImageBitmap(file);const sc=Math.min(1,max/Math.max(bm.width,bm.height));const c=document.createElement('canvas');c.width=Math.round(bm.width*sc);c.height=Math.round(bm.height*sc);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return c.toDataURL('image/jpeg',q)}
+function cropper(file,aspect,out,round,cb){
+ createImageBitmap(file).then(bm=>{
+  const W=280,H=Math.round(W/aspect);let sc0=Math.max(W/bm.width,H/bm.height),z=1,ox=0,oy=0;
+  modal(`<h2>▌ENQUADRAR</h2><div id="crop" style="width:${W}px;height:${H}px;margin:8px auto;overflow:hidden;background:#000;border-radius:${round?'50%':'8px'};touch-action:none;border:2px solid var(--amber)"><canvas id="cv" width="${W}" height="${H}" style="width:100%;height:100%;display:block"></canvas></div>
+   <input type="range" id="cz" min="1" max="4" step="0.01" value="1" style="padding:0"><p style="color:var(--dim);font-size:12px;text-align:center">Arraste a foto para mover e use o controle para dar zoom.</p>
+   <div class="row"><button class="b pri" id="cok">USAR FOTO</button><button class="b" onclick="closeModal()">CANCELAR</button></div>`);
+  const cv=$('#cv'),c=cv.getContext('2d'),box=$('#crop');
+  const clamp=()=>{const s=sc0*z,mx=Math.max(0,(bm.width*s-W)/2),my=Math.max(0,(bm.height*s-H)/2);ox=Math.max(-mx,Math.min(mx,ox));oy=Math.max(-my,Math.min(my,oy))};
+  const paint=(ctx,k)=>{const s=sc0*z*k;ctx.fillStyle='#000';ctx.fillRect(0,0,W*k,H*k);ctx.drawImage(bm,W*k/2+ox*k-bm.width*s/2,H*k/2+oy*k-bm.height*s/2,bm.width*s,bm.height*s)};
+  const draw=()=>{clamp();paint(c,1)};draw();
+  let drag=null;
+  box.onpointerdown=e=>{drag={x:e.clientX,y:e.clientY};box.setPointerCapture(e.pointerId)};
+  box.onpointermove=e=>{if(!drag)return;ox+=e.clientX-drag.x;oy+=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY};draw()};
+  box.onpointerup=box.onpointercancel=()=>{drag=null};
+  $('#cz').oninput=e=>{z=+e.target.value;draw()};
+  box.onwheel=e=>{e.preventDefault();z=Math.max(1,Math.min(4,z-e.deltaY*.002));$('#cz').value=z;draw()};
+  $('#cok').onclick=()=>{const oc=document.createElement('canvas');oc.width=out;oc.height=Math.round(out/aspect);paint(oc.getContext('2d'),out/W);cb(oc.toDataURL('image/jpeg',round?.82:.74));};
+ }).catch(()=>toast('Não consegui abrir essa foto','bad'))}
 let photoCb=null;$('#photoIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f&&photoCb)try{await photoCb(f)}catch(err){toast('Não consegui abrir essa foto','bad')}};
 function pickPhoto(cb){photoCb=cb;$('#photoIn').click()}
-function addPhoto(id){const a=S.acts.find(x=>x.id===id);if((a.photos||[]).length>=4)return toast('Máximo de 4 fotos','warn');pickPhoto(async f=>{a.photos=a.photos||[];a.photos.push(await imgData(f,900,.72));bump(a);actDetail(id)})}
+function addPhoto(id){const a=S.acts.find(x=>x.id===id);if((a.photos||[]).length>=4)return toast('Máximo de 4 fotos','warn');pickPhoto(f=>cropper(f,4/3,900,false,d=>{a.photos=a.photos||[];a.photos.push(d);bump(a);actDetail(id)}))}
 
 let ptab='acts';
 function renderProfile(){const p=S.profile,v=$('#vPerfil'),A=S.acts.slice().sort((a,b)=>b.start-a.start);
  let km=0,ms=0;A.forEach(a=>{const k=actStats(a);km+=k.d;ms+=k.ms});
- const ph=[];A.forEach(a=>(a.photos||[]).forEach(f=>ph.push(f)));
- const cover=p.cover?`<div style="background:url(${p.cover}) center/cover;height:100%"></div>`:ph.length?`<div class="mos">${ph.slice(0,4).map(f=>`<i style="background-image:url(${f})"></i>`).join('')}</div>`:'<div style="display:grid;place-items:center;height:100%"><img src="logo.png" style="height:90px;opacity:.25;mix-blend-mode:screen"></div>';
+ const cover='<div style="display:grid;place-items:center;height:100%"><img src="logo.png" style="height:104px;opacity:.55;mix-blend-mode:screen"></div>';
  v.innerHTML=`<div class="cover">${cover}<button class="back" onclick="go(window._prev&&window._prev!=='perfil'?window._prev:'mapa')">◀ Voltar</button></div>
  <div class="phead"><div class="avbig" style="${p.photo?`background-image:url(${p.photo})`:''}">${p.photo?'':esc(((p.name||(S.user&&S.user.email)||'·')[0]).toUpperCase())}</div><div style="min-width:0;padding-bottom:4px"><h2>${esc(p.name||'Seu nome')}</h2><small>${S.user?esc(S.user.email):'Sem conta neste aparelho'}</small></div></div>
  ${p.bio?`<div class="pbio">${esc(p.bio)}</div>`:''}
@@ -610,11 +628,12 @@ function renderProfile(){const p=S.profile,v=$('#vPerfil'),A=S.acts.slice().sort
  <div id="plist">${ptab==='acts'?(A.map(actCard).join('')||'<p style="color:var(--dim);line-height:1.5">Nenhuma atividade ainda. Grave uma trilha ou caminhada com o botão <b>REC</b> no mapa e ela aparece aqui.</p>'):(S.trails.map(t=>`<div class="ac" onclick="openT('${t.id}','mapa');setTimeout(fit,400)"><div class="mini">${routeSvg(t.pts.map(x=>x.ll),96,72,6)}</div><div style="min-width:0"><h3>${esc(t.name)}</h3><div class="m"><b>${fmtD(trailLen(t))}</b> · ${t.pts.length} pontos<br>${S.user?(t.sync&&t.sync.hash===core(t)?'☁ salva na nuvem':'☁ aguardando envio'):'só neste aparelho'}</div></div></div>`).join('')||'<p style="color:var(--dim)">Nenhuma trilha.</p>')}</div>`}
 function editProfile(){const p=S.profile;
  modal(`<h2>▌EDITAR PERFIL</h2><label>NOME</label><input id="epN" value="${esc(p.name||'')}" maxlength="40"><label>BIO</label><textarea id="epB" maxlength="200" placeholder="Fale um pouco sobre você e suas trilhas">${esc(p.bio||'')}</textarea>
- <div class="row"><button class="b sm" onclick="setImg('photo')">FOTO DE PERFIL</button><button class="b sm" onclick="setImg('cover')">FOTO DE CAPA</button>${p.cover?'<button class="b sm red" onclick="rmCover()">REMOVER CAPA</button>':''}</div>
+ <div class="row"><button class="b sm" onclick="setImg()">${p.photo?'TROCAR FOTO DE PERFIL':'ADICIONAR FOTO DE PERFIL'}</button>${p.photo?'<button class="b sm red" onclick="rmPhoto()">REMOVER FOTO</button>':''}</div>
  <div class="row"><button class="b pri" onclick="saveProfile()">SALVAR</button><button class="b" onclick="closeModal()">CANCELAR</button></div>`)}
 function saveProfile(){const p=S.profile;p.name=$('#epN').value.trim();p.bio=$('#epB').value.trim();p.rev=(p.rev||1)+1;save();pushSoon();closeModal();renderAv();renderProfile()}
-function setImg(k){const n=$('#epN')?$('#epN').value:null,b=$('#epB')?$('#epB').value:null;pickPhoto(async f=>{S.profile[k]=await imgData(f,k==='photo'?300:1000,k==='photo'?.8:.72);if(n!==null){S.profile.name=n.trim();S.profile.bio=b.trim()}S.profile.rev=(S.profile.rev||1)+1;save();pushSoon();renderAv();editProfile();renderProfile()})}
-function rmCover(){S.profile.cover='';S.profile.rev=(S.profile.rev||1)+1;save();pushSoon();editProfile();renderProfile()}
+function setImg(){const n=$('#epN')?$('#epN').value:null,b=$('#epB')?$('#epB').value:null;
+ pickPhoto(f=>cropper(f,1,320,true,d=>{S.profile.photo=d;if(n!==null){S.profile.name=n.trim();S.profile.bio=b.trim()}S.profile.rev=(S.profile.rev||1)+1;save();pushSoon();renderAv();editProfile();renderProfile()}))}
+function rmPhoto(){S.profile.photo='';S.profile.rev=(S.profile.rev||1)+1;save();pushSoon();renderAv();editProfile();renderProfile()}
 
 // ================= SOS =================
 $('#bsos').onclick=()=>{
