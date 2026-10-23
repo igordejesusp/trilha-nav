@@ -129,6 +129,9 @@ textarea{min-height:60px}
 .emr{border:1px solid var(--line);padding:9px;margin:8px 0;background:#0a0a0a}
 .emr .k{color:var(--dim);font-size:10px;letter-spacing:.08em}.emr .n{font-size:14px;margin:2px 0}.emr .d{color:#fff;font-weight:600;font-size:12px;margin-bottom:6px}
 a.b{text-decoration:none;display:inline-block}
+.chip{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.06em;border:1px solid var(--line);vertical-align:middle}
+.chip.ok{color:var(--ok);border-color:var(--ok)}.chip.pend{color:#fff;border-color:#fff}.chip.blk{color:#ff7a66;border-color:var(--red)}.chip.adm{color:var(--amber);border-color:var(--amber)}
+#vEquipe{padding-top:calc(12px + env(safe-area-inset-top))}
 input[type=range]{accent-color:var(--amber);width:100%}
 #avBtn{position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:9;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--amber);background:#111 center/cover no-repeat;color:#fff;font-weight:700;font-size:15px;overflow:hidden;padding:0}
 #top{padding-right:56px!important}
@@ -243,6 +246,7 @@ input[type=range]{accent-color:var(--amber);width:100%}
 </div>
 <button id="avBtn" aria-label="Perfil">·</button>
 <div class="view" id="vPerfil"></div>
+<div class="view" id="vEquipe"></div>
 <input type="file" id="photoIn" accept="image/*" style="display:none">
 <div id="tabbar">
   <button data-v="trilhas"><i>▤</i>TRILHAS</button><button data-v="mapa" class="on"><i>◉</i>MAPA</button><button data-v="editar"><i>✚</i>EDITAR</button><button data-v="suporte"><i>◎</i>SUPORTE</button><button data-v="ajustes"><i>⚙</i>AJUSTES</button>
@@ -366,13 +370,13 @@ function renderTop(){const t=T();$('#tname').textContent=t?t.name.toUpperCase():
 function renderAll(){renderTop();renderSheet();renderNav();$('#brec').classList.toggle('on',!!rec)}
 
 function go(n){
- if(n==='perfil'&&tab!=='perfil')window._prev=tab;
+ if((n==='perfil'||n==='equipe')&&tab!==n)window._prev=tab;
  tab=n;document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.v===n));
- $('#vTrilhas').classList.toggle('on',n==='trilhas');$('#vSuporte').classList.toggle('on',n==='suporte');$('#vPerfil').classList.toggle('on',n==='perfil');$('#avBtn').style.display=n==='perfil'?'none':'';$('#vAjustes').classList.toggle('on',n==='ajustes');
+ $('#vTrilhas').classList.toggle('on',n==='trilhas');$('#vSuporte').classList.toggle('on',n==='suporte');$('#vPerfil').classList.toggle('on',n==='perfil');$('#vEquipe').classList.toggle('on',n==='equipe');$('#avBtn').style.display=(n==='perfil'||n==='equipe')?'none':'';$('#vAjustes').classList.toggle('on',n==='ajustes');
  const isMap=n==='mapa'||n==='editar';
  $('#sheet').style.display=n==='mapa'?'':'none';$('#etool').classList.toggle('on',n==='editar');
  $('#btns').style.display=isMap?'flex':'none';$('#top').style.display=isMap?'':'none';
- if(n==='trilhas')renderTrails();if(n==='suporte')renderLive();if(n==='perfil')renderProfile();if(n==='ajustes')renderSettings();
+ if(n==='trilhas')renderTrails();if(n==='suporte')renderLive();if(n==='perfil')renderProfile();if(n==='equipe')renderTeam();if(n==='ajustes')renderSettings();
  if(n==='editar'&&!T()){tab='trilhas';return newTrailFlow()}
  if(isMap){setTimeout(()=>map.resize(),50);drawMap();renderAll();layoutTop()}
 }
@@ -524,7 +528,21 @@ function setUser(j){S.user={uid:j.localId,email:j.email,idToken:j.idToken,refres
 async function token(){const u=S.user;if(!u)return null;if(Date.now()<u.exp)return u.idToken;
  const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${FBK()}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(u.refresh)});
  const j=await r.json();if(!r.ok)throw new Error('SESSAO');u.idToken=j.id_token;u.refresh=j.refresh_token;u.exp=Date.now()+(+j.expires_in-60)*1000;save();return u.idToken}
-async function dbu(path,method='GET',body){const t=await token();const r=await fetch(`${FB_URL}/users/${S.user.uid}/${path}.json?auth=${t}`,{method,body:body===undefined?undefined:JSON.stringify(body)});if(!r.ok)throw new Error('DB '+r.status);return r.json()}
+async function dbr(path,method='GET',body){const t=await token();const r=await fetch(`${FB_URL}/${path}.json?auth=${t}`,{method,body:body===undefined?undefined:JSON.stringify(body)});if(!r.ok)throw new Error('DB '+r.status);return r.json()}
+const dbu=(path,method,body)=>dbr(`users/${S.user.uid}/${path}`,method,body);
+const dbm=(path,method,body)=>dbr(`members/${path}`,method,body);
+const isAdmin=()=>!!(S.user&&window.FB_ADMIN&&S.user.uid===window.FB_ADMIN);
+const devId=(()=>{try{let d=localStorage.getItem('boonie.dev');if(!d){d='d'+uid();localStorage.setItem('boonie.dev',d)}return d}catch(e){return'd0'}})();
+const devName=()=>{const u=navigator.userAgent;return/iPhone/.test(u)?'iPhone':/iPad/.test(u)?'iPad':/Android/.test(u)?'Android':/Mac/.test(u)?'Mac':/Windows/.test(u)?'Windows':'Outro'};
+async function register(){const u=S.user.uid,now=Date.now();
+ await dbm(u+'/email','PUT',S.user.email);
+ if(S.profile.name)await dbm(u+'/name','PUT',S.profile.name);
+ await dbm(u+'/lastSeen','PUT',now);await dbm(u+'/acts','PUT',S.acts.length);
+ await dbm(u+'/devices/'+devId,'PUT',{last:now,ua:devName()});
+ if(!(await dbm(u+'/created')))await dbm(u+'/created','PUT',now);
+ const st=await dbm(u+'/status');S.mstatus=isAdmin()?'approved':(st||'pending');save()}
+const touch=()=>{if(S.user&&S.mstatus){const u=S.user.uid;dbm(u+'/lastSeen','PUT',Date.now()).catch(()=>{});dbm(u+'/acts','PUT',S.acts.length).catch(()=>{});dbm(u+'/devices/'+devId,'PUT',{last:Date.now(),ua:devName()}).catch(()=>{})}};
+const blockMsg=()=>S.mstatus==='blocked'?'Conta bloqueada pelo administrador.':'Aguardando aprovação do administrador. Enquanto isso, o app funciona só neste aparelho.';
 
 const core=t=>JSON.stringify([t.name,t.desc||'',t.pts,t.hz,t.emerg||null]);
 const r5=n=>Math.round(n*1e5)/1e5;
@@ -532,9 +550,9 @@ const packAct=a=>({id:a.id,name:a.name,trailId:a.trailId||'',trail:a.trail||'',s
 const unpackAct=a=>({...a,trailId:a.trailId||null,pts:a.pts||[],hits:a.hits||[],photos:a.photos||[],sh:a.rev||1});
 const profCore=()=>({name:S.profile.name||'',bio:S.profile.bio||'',photo:S.profile.photo||'',cover:'',rev:S.profile.rev||1});
 let pushing=false,syncErr='',pushT=null,syncTimer=null;
-function startSync(){if(!syncTimer){syncTimer=setInterval(pushChanges,20000);addEventListener('online',pushChanges)}}
+function startSync(){if(!syncTimer){setInterval(touch,300000);syncTimer=setInterval(pushChanges,20000);addEventListener('online',pushChanges)}}
 const pushSoon=()=>{clearTimeout(pushT);pushT=setTimeout(pushChanges,1500)};
-async function pushChanges(){if(!S.user||!window.FB_URL||pushing||!navigator.onLine)return;pushing=true;try{
+async function pushChanges(){if(!S.user||!window.FB_URL||pushing||!navigator.onLine)return;if(S.mstatus&&S.mstatus!=='approved')return;pushing=true;try{
  for(const id of S.delT.slice()){await dbu('trails/'+id,'DELETE');S.delT=S.delT.filter(x=>x!==id)}
  for(const id of S.delA.slice()){await dbu('acts/'+id,'DELETE');S.delA=S.delA.filter(x=>x!==id)}
  for(const t of S.trails){if(t.demo)continue;const h=core(t);if(!t.sync||t.sync.hash!==h){const upd=Date.now();await dbu('trails/'+t.id,'PUT',{name:t.name,desc:t.desc||'',pts:t.pts,hz:t.hz,emerg:t.emerg||null,upd});t.sync={hash:h,upd}}}
@@ -542,6 +560,9 @@ async function pushChanges(){if(!S.user||!window.FB_URL||pushing||!navigator.onL
  if(S.profile.name||S.profile.bio||S.profile.photo){if(S.profSh!==(S.profile.rev||1)){await dbu('profile','PUT',profCore());S.profSh=S.profile.rev||1}}
  S.syncAt=Date.now();syncErr=''}catch(e){syncErr=e.message==='SESSAO'?'Sessão expirada. Entre de novo.':'Sem conexão com a nuvem'}finally{pushing=false;save();if(tab==='perfil')renderProfile()}}
 async function syncAll(){if(!S.user||!window.FB_URL)return;try{
+ try{await register()}catch(e){syncErr='Sem conexão com a nuvem';if(tab==='perfil')renderProfile();return}
+ if(S.mstatus!=='approved'){syncErr=blockMsg();if(tab==='perfil')renderProfile();return}
+ syncErr='';
  const [rt,ra,rp]=await Promise.all([dbu('trails'),dbu('acts'),dbu('profile')]);
  const R=rt||{};
  if(Object.keys(R).length)S.trails=S.trails.filter(t=>!t.demo);
@@ -556,7 +577,7 @@ async function syncAll(){if(!S.user||!window.FB_URL)return;try{
 function renderAv(){const b=$('#avBtn'),p=S.profile;if(p.photo){b.style.backgroundImage=`url(${p.photo})`;b.textContent=''}else{b.style.backgroundImage='';b.textContent=((p.name||(S.user&&S.user.email)||'·')[0]||'·').toUpperCase()}}
 $('#avBtn').onclick=e=>{e.stopPropagation();const had=document.querySelector('.pop.fx');closePop();if(had)return;
  const d=document.createElement('div');d.className='pop fx';
- d.innerHTML=(S.user?`<div class="who">${esc(S.user.email)}</div>`:'<div class="who">Sem conta neste aparelho</div>')+'<button class="mi" onclick="closePop();go(\'perfil\')">Meu perfil</button>'+(S.user?'<button class="mi" onclick="closePop();syncNow()">Sincronizar agora</button><button class="mi red" onclick="closePop();logout()">Sair da conta</button>':'<button class="mi" onclick="closePop();loginUI(\'in\')">Entrar</button><button class="mi" onclick="closePop();loginUI(\'up\')">Criar conta</button>');
+ d.innerHTML=(S.user?`<div class="who">${esc(S.user.email)}</div>`:'<div class="who">Sem conta neste aparelho</div>')+'<button class="mi" onclick="closePop();go(\'perfil\')">Meu perfil</button>'+(isAdmin()?'<button class="mi" onclick="closePop();go(\'equipe\')">Equipe (admin)</button>':'')+(S.user?'<button class="mi" onclick="closePop();syncNow()">Sincronizar agora</button><button class="mi red" onclick="closePop();logout()">Sair da conta</button>':'<button class="mi" onclick="closePop();loginUI(\'in\')">Entrar</button><button class="mi" onclick="closePop();loginUI(\'up\')">Criar conta</button>');
  document.body.appendChild(d)};
 function loginUI(mode){modal(`<h2>▌${mode==='up'?'CRIAR CONTA':'ENTRAR'}</h2><p style="color:var(--dim);font-size:12px;line-height:1.5">Suas trilhas e atividades ficam salvas na nuvem e voltam em qualquer aparelho.</p>
  <label>E-MAIL</label><input id="lgE" type="email" autocomplete="email" autocapitalize="off" value="${esc((S.user&&S.user.email)||'')}">
@@ -622,7 +643,7 @@ function renderProfile(){const p=S.profile,v=$('#vPerfil'),A=S.acts.slice().sort
  <div class="phead"><div class="avbig" style="${p.photo?`background-image:url(${p.photo})`:''}">${p.photo?'':esc(((p.name||(S.user&&S.user.email)||'·')[0]).toUpperCase())}</div><div style="min-width:0;padding-bottom:4px"><h2>${esc(p.name||'Seu nome')}</h2><small>${S.user?esc(S.user.email):'Sem conta neste aparelho'}</small></div></div>
  ${p.bio?`<div class="pbio">${esc(p.bio)}</div>`:''}
  <div class="row" style="padding:10px 14px 0;margin:0"><button class="b sm pri" onclick="editProfile()">EDITAR PERFIL</button>${S.user?'<button class="b sm" onclick="syncNow()">SINCRONIZAR</button><button class="b sm red" onclick="logout()">SAIR</button>':''}</div>
- ${S.user?`<div style="padding:8px 14px 0;font-size:11px;color:${syncErr?'#ff7a66':'var(--dim)'}">☁ ${syncErr?esc(syncErr):S.syncAt?'Salvo na nuvem às '+hhmm(S.syncAt):'Sincronizando…'}</div>`:`<div class="banner"><b>Salve suas trilhas na nuvem.</b><br>Entre com seu e-mail para não perder trilhas e atividades e usá-las em outro aparelho.<div class="row"><button class="b pri sm" onclick="loginUI('in')">ENTRAR</button><button class="b sm" onclick="loginUI('up')">CRIAR CONTA</button></div></div>`}
+ ${S.user?`<div style="padding:8px 14px 0;font-size:12px;line-height:1.5;color:${syncErr?'#ff7a66':'var(--dim)'}">${S.mstatus&&S.mstatus!=='approved'?'⏳ '+esc(blockMsg()):'☁ '+(syncErr?esc(syncErr):S.syncAt?'Salvo na nuvem às '+hhmm(S.syncAt):'Sincronizando…')}</div>`:`<div class="banner"><b>Salve suas trilhas na nuvem.</b><br>Entre com seu e-mail para não perder trilhas e atividades e usá-las em outro aparelho.<div class="row"><button class="b pri sm" onclick="loginUI('in')">ENTRAR</button><button class="b sm" onclick="loginUI('up')">CRIAR CONTA</button></div></div>`}
  <div class="stats"><div><b>${A.length}</b><small>ATIVIDADES</small></div><div><b>${(km/1000).toFixed(1)}</b><small>KM</small></div><div><b>${fmtT(ms)}</b><small>TEMPO</small></div><div><b>${S.trails.length}</b><small>TRILHAS</small></div></div>
  <div class="ptabs"><button class="${ptab==='acts'?'on':''}" onclick="ptab='acts';renderProfile()">MINHAS ATIVIDADES</button><button class="${ptab==='trails'?'on':''}" onclick="ptab='trails';renderProfile()">MINHAS TRILHAS</button></div>
  <div id="plist">${ptab==='acts'?(A.map(actCard).join('')||'<p style="color:var(--dim);line-height:1.5">Nenhuma atividade ainda. Grave uma trilha ou caminhada com o botão <b>REC</b> no mapa e ela aparece aqui.</p>'):(S.trails.map(t=>`<div class="ac" onclick="openT('${t.id}','mapa');setTimeout(fit,400)"><div class="mini">${routeSvg(t.pts.map(x=>x.ll),96,72,6)}</div><div style="min-width:0"><h3>${esc(t.name)}</h3><div class="m"><b>${fmtD(trailLen(t))}</b> · ${t.pts.length} pontos<br>${S.user?(t.sync&&t.sync.hash===core(t)?'☁ salva na nuvem':'☁ aguardando envio'):'só neste aparelho'}</div></div></div>`).join('')||'<p style="color:var(--dim)">Nenhuma trilha.</p>')}</div>`}
@@ -634,6 +655,27 @@ function saveProfile(){const p=S.profile;p.name=$('#epN').value.trim();p.bio=$('
 function setImg(){const n=$('#epN')?$('#epN').value:null,b=$('#epB')?$('#epB').value:null;
  pickPhoto(f=>cropper(f,1,320,true,d=>{S.profile.photo=d;if(n!==null){S.profile.name=n.trim();S.profile.bio=b.trim()}S.profile.rev=(S.profile.rev||1)+1;save();pushSoon();renderAv();editProfile();renderProfile()}))}
 function rmPhoto(){S.profile.photo='';S.profile.rev=(S.profile.rev||1)+1;save();pushSoon();renderAv();editProfile();renderProfile()}
+
+// ================= EQUIPE (administrador) =================
+const agoT=ms=>{const m=Math.round(ms/60000);return m<1?'agora':m<60?m+' min':m<1440?Math.round(m/60)+' h':Math.round(m/1440)+' d'};
+async function renderTeam(){const v=$('#vEquipe');
+ if(!isAdmin()){v.innerHTML='<h1>▌EQUIPE</h1><p style="color:var(--dim)">Só o administrador vê esta página.</p>';return}
+ v.innerHTML='<h1>▌EQUIPE</h1><p style="color:var(--dim)">Carregando…</p>';
+ try{const M=(await dbr('members'))||{},L=Object.entries(M).map(([uid,m])=>({uid,...m})),rank={pending:0,undefined:0,blocked:2,approved:1};
+  L.forEach(m=>{if(m.uid===window.FB_ADMIN)m.status='admin'});
+  L.sort((a,b)=>((a.status==='admin')-(b.status==='admin'))||((rank[a.status]||0)-(rank[b.status]||0))||((b.lastSeen||0)-(a.lastSeen||0)));
+  const pend=L.filter(m=>m.status!=='admin'&&m.status!=='approved'&&m.status!=='blocked').length;
+  v.innerHTML=`<div class="row" style="margin:0 0 6px"><button class="b sm" onclick="go(window._prev&&window._prev!=='equipe'?window._prev:'mapa')">◀ Voltar</button><button class="b sm" onclick="renderTeam()">ATUALIZAR</button></div><h1>▌EQUIPE</h1>
+  <p style="color:var(--dim);font-size:13px;line-height:1.5">${L.length} conta(s)${pend?` · <b style="color:#fff">${pend} aguardando aprovação</b>`:''}. Quem não está aprovado usa o app só no aparelho, sem nuvem.</p>
+  ${L.map(m=>{const st=m.status==='admin'?'<span class="chip adm">ADMIN</span>':m.status==='approved'?'<span class="chip ok">APROVADO</span>':m.status==='blocked'?'<span class="chip blk">BLOQUEADO</span>':'<span class="chip pend">AGUARDANDO</span>';
+   const dv=Object.values(m.devices||{}),n=dv.length,flag=n>=3;
+   return `<div class="card"><h2>${esc(m.name||m.email||m.uid)} ${st}</h2><div class="meta">${esc(m.email||'')}</div>
+   <p style="font-size:12px;line-height:1.6">Entrou ${m.created?new Date(m.created).toLocaleDateString('pt-BR'):'—'} · último acesso ${m.lastSeen?'há '+agoT(Date.now()-m.lastSeen):'—'}<br>${m.acts||0} atividade(s) · ${n} aparelho(s)${n?': '+[...new Set(dv.map(d=>d.ua))].join(', '):''}${flag?'<br><b style="color:#ff7a66">⚠ Possível conta compartilhada ('+n+' aparelhos)</b>':''}</p>
+   ${m.status==='admin'?'':`<div class="row">${m.status==='approved'?'':`<button class="b pri sm" onclick="setStatus('${m.uid}','approved')">APROVAR</button>`}${m.status==='blocked'?'':`<button class="b sm" onclick="setStatus('${m.uid}','blocked')">BLOQUEAR</button>`}<button class="b red sm" onclick="removeMember('${m.uid}')">REMOVER</button></div>`}</div>`}).join('')}
+  <p style="color:var(--dim);font-size:11px;line-height:1.5;margin-top:10px">REMOVER apaga os dados da pessoa na nuvem e o cadastro dela aqui. A conta de e-mail continua existindo: para excluí-la de vez, use o <a href="https://console.firebase.google.com/project/trilha-nav/authentication/users" target="_blank" style="color:var(--amber)">console do Firebase</a>.</p>`
+ }catch(e){v.innerHTML='<h1>▌EQUIPE</h1><p style="color:#ff7a66">Não consegui carregar ('+esc(e.message)+'). Verifique a internet.</p>'}}
+async function setStatus(uid,st){try{await dbm(uid+'/status','PUT',st);toast(st==='approved'?'APROVADO':'BLOQUEADO','warn');renderTeam()}catch(e){toast('Erro: '+esc(e.message),'bad')}}
+async function removeMember(uid){if(!confirm('Remover esta pessoa? Os dados dela na nuvem serão apagados.'))return;try{await dbr('users/'+uid,'DELETE');await dbr('members/'+uid,'DELETE');toast('REMOVIDO','warn');renderTeam()}catch(e){toast('Erro: '+esc(e.message),'bad')}}
 
 // ================= SOS =================
 $('#bsos').onclick=()=>{
