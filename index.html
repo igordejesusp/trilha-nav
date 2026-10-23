@@ -129,6 +129,31 @@ textarea{min-height:60px}
 .emr{border:1px solid var(--line);padding:9px;margin:8px 0;background:#0a0a0a}
 .emr .k{color:var(--dim);font-size:10px;letter-spacing:.08em}.emr .n{font-size:14px;margin:2px 0}.emr .d{color:#fff;font-weight:600;font-size:12px;margin-bottom:6px}
 a.b{text-decoration:none;display:inline-block}
+#avBtn{position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:9;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--amber);background:#111 center/cover no-repeat;color:#fff;font-weight:700;font-size:15px;overflow:hidden;padding:0}
+#top{padding-right:56px!important}
+.pop.fx{position:fixed;top:calc(52px + env(safe-area-inset-top));right:10px;z-index:30}
+.pop .who{padding:8px 12px 6px;color:var(--dim);font-size:11px;border-bottom:1px solid var(--line);margin-bottom:3px;max-width:230px;overflow:hidden;text-overflow:ellipsis}
+#vPerfil{padding:0 0 20px}
+.cover{height:150px;background:linear-gradient(135deg,#1b2210,#000 70%) center/cover;position:relative;display:grid;overflow:hidden}
+.cover .mos{display:grid;grid-template-columns:repeat(4,1fr);height:100%}.cover .mos i{background:center/cover}
+.cover .back{position:absolute;top:calc(10px + env(safe-area-inset-top));left:10px;background:rgba(0,0,0,.55);border:1px solid var(--line);color:#fff;border-radius:18px;padding:7px 12px;font-size:12px;z-index:2}
+.phead{display:flex;gap:14px;align-items:flex-end;padding:0 14px;margin-top:-34px;position:relative}
+.avbig{width:84px;height:84px;border-radius:50%;border:3px solid #000;background:#1b2210 center/cover no-repeat;display:grid;place-items:center;font-size:32px;font-weight:700;flex:none;overflow:hidden}
+.phead h2{font-size:20px;margin-bottom:2px}.phead small{color:var(--dim);font-size:12px;display:block;word-break:break-all}
+.pbio{padding:10px 14px 0;color:var(--txt);font-size:14px;line-height:1.5;white-space:pre-wrap}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:14px 14px 0;border:1px solid var(--line);border-radius:8px}
+.stats div{padding:10px 4px;text-align:center;border-right:1px solid var(--line)}.stats div:last-child{border:0}
+.stats b{display:block;font-size:17px}.stats small{color:var(--dim);font-size:10px;letter-spacing:.06em}
+.ptabs{display:flex;margin:14px 14px 0;border-bottom:1px solid var(--line)}
+.ptabs button{flex:1;padding:11px 4px;background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);font-size:12px;font-weight:600;letter-spacing:.05em}
+.ptabs button.on{color:#fff;border-color:var(--amber)}
+#plist{padding:12px 14px 0}
+.ac{display:flex;gap:12px;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:#0a0a0a}
+.ac .mini{width:96px;height:72px;flex:none;background:#0d0d0d;border-radius:6px;overflow:hidden}
+.ac h3{font-size:14px;margin-bottom:3px}.ac .m{color:var(--dim);font-size:12px;line-height:1.5}.ac .m b{color:#fff}
+.banner{margin:14px;padding:12px;border:1px solid var(--amber);border-radius:10px;background:#141a0c;font-size:13px;line-height:1.5}
+.ph{display:flex;gap:6px;overflow-x:auto;margin:8px 0}.ph img{height:90px;border-radius:6px}
+#modal label{display:block;color:var(--dim);font-size:10px;letter-spacing:.1em;margin:10px 0 3px}
 .tcard{position:relative;padding-right:52px}
 .dots{position:absolute;top:6px;right:6px;width:40px;height:40px;background:none;border:0;color:#fff;font-size:24px;line-height:1;border-radius:8px}
 .dots:active{background:#1b2210}
@@ -215,6 +240,9 @@ a.b{text-decoration:none;display:inline-block}
   <div class="step"><i><span>2</span></i><div>Mantenha o app <b>aberto</b> na tela. O celular pode pausar o GPS se o app for para segundo plano.</div></div>
   <div class="step"><i><span>3</span></i><div>Qualquer pessoa com o link vê sua posição. <b>Gere um novo link</b> ao terminar a trilha.</div></div>
 </div>
+<button id="avBtn" aria-label="Perfil">·</button>
+<div class="view" id="vPerfil"></div>
+<input type="file" id="photoIn" accept="image/*" style="display:none">
 <div id="tabbar">
   <button data-v="trilhas"><i>▤</i>TRILHAS</button><button data-v="mapa" class="on"><i>◉</i>MAPA</button><button data-v="editar"><i>✚</i>EDITAR</button><button data-v="suporte"><i>◎</i>SUPORTE</button><button data-v="ajustes"><i>⚙</i>AJUSTES</button>
 </div>
@@ -234,6 +262,9 @@ function seed(){return{cur:null,cfg:{radius:30,unit:'utm'},rec:null,trails:[newT
 function newTrail(name,desc,pts=[],hz=[]){return{id:uid(),name,desc,pts:pts.map(p=>({id:uid(),type:p[0],name:p[1],action:p[2],ll:p[3]})),hz:hz.map(h=>({id:uid(),kind:h[0],note:h[1],ll:h[2]})),run:{dir:'ida',done:{ida:{},volta:{}},act:{}},tracks:[]}}
 let S;try{S=JSON.parse(localStorage.getItem(LS))}catch(e){}
 if(!S||!S.trails){S=seed();S.cur=S.trails[0].id}
+S.trails.forEach(t=>{if(t.name==='Exemplo — Capim Branco'&&(t.desc||'').startsWith('Trilha de demonstração'))t.demo=true});
+S.acts=S.acts||[];S.profile=S.profile||{};S.delT=S.delT||[];S.delA=S.delA||[];
+S.trails.forEach(t=>{if(t.tracks&&t.tracks.length){t.tracks.forEach(k=>S.acts.push({id:k.id,name:t.name+' · '+new Date(k.start).toLocaleDateString('pt-BR'),trailId:t.id,trail:t.name,start:k.start,end:k.end,pts:k.pts,hits:k.hits||[],dir:k.dir||'ida',photos:[],rev:1}));t.tracks=[]}});
 const save=()=>{try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}};
 const T=()=>S.trails.find(t=>t.id===S.cur);
 const TN={start:'INÍCIO',wp:'PONTO',obj:'OBJETIVO',end:'FIM'},HK={water:['≈','ÁGUA'],danger:['!','PERIGO'],shelter:['⌂','ABRIGO'],exit:['⇥','SAÍDA']};
@@ -300,7 +331,7 @@ function drawMap(){
 function drawLine(){if(!ready)return;const t=T();const c=t?ordered(t).map(p=>p.ll):[];
  map.getSource('route').setData({type:'Feature',geometry:{type:'LineString',coordinates:c}});
  map.setPaintProperty('route','line-color',t&&t.run.dir==='volta'?'#9bb05a':'#ffffff');
- const tr=rec&&t&&rec.trail===t.id?rec.pts.map(p=>[p[0],p[1]]):[];map.getSource('trk').setData({type:'Feature',geometry:{type:'LineString',coordinates:tr}})}
+ const tr=rec&&rec.trail===(t?t.id:null)?rec.pts.map(p=>[p[0],p[1]]):[];map.getSource('trk').setData({type:'Feature',geometry:{type:'LineString',coordinates:tr}})}
 
 // ================= UI / RENDER =================
 function modal(h){const m=$('#modal');m.innerHTML=`<div class="box">${h}</div>`;m.style.display='flex'}
@@ -334,12 +365,13 @@ function renderTop(){const t=T();$('#tname').textContent=t?t.name.toUpperCase():
 function renderAll(){renderTop();renderSheet();renderNav();$('#brec').classList.toggle('on',!!rec)}
 
 function go(n){
+ if(n==='perfil'&&tab!=='perfil')window._prev=tab;
  tab=n;document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.v===n));
- $('#vTrilhas').classList.toggle('on',n==='trilhas');$('#vSuporte').classList.toggle('on',n==='suporte');$('#vAjustes').classList.toggle('on',n==='ajustes');
+ $('#vTrilhas').classList.toggle('on',n==='trilhas');$('#vSuporte').classList.toggle('on',n==='suporte');$('#vPerfil').classList.toggle('on',n==='perfil');$('#avBtn').style.display=n==='perfil'?'none':'';$('#vAjustes').classList.toggle('on',n==='ajustes');
  const isMap=n==='mapa'||n==='editar';
  $('#sheet').style.display=n==='mapa'?'':'none';$('#etool').classList.toggle('on',n==='editar');
  $('#btns').style.display=isMap?'flex':'none';$('#top').style.display=isMap?'':'none';
- if(n==='trilhas')renderTrails();if(n==='suporte')renderLive();if(n==='ajustes')renderSettings();
+ if(n==='trilhas')renderTrails();if(n==='suporte')renderLive();if(n==='perfil')renderProfile();if(n==='ajustes')renderSettings();
  if(n==='editar'&&!T()){tab='trilhas';return newTrailFlow()}
  if(isMap){setTimeout(()=>map.resize(),50);drawMap();renderAll();layoutTop()}
 }
@@ -400,7 +432,7 @@ function startGps(){if(!navigator.geolocation)return toast('Este aparelho não t
  $('#bgps').classList.add('on');renderTop()}
 function onPos(ll,acc){
  me=ll;meAcc=acc;meMk.setLngLat(ll).addTo(map);const t=T();
- if(rec&&t&&rec.trail===t.id){const l=rec.pts[rec.pts.length-1];if(!l||dist(l,ll)>=5){rec.pts.push([ll[0],ll[1],Date.now()]);if(rec.pts.length%10===0){S.rec=rec;save()}drawLine()}}
+ if(rec&&rec.trail===(t?t.id:null)){const l=rec.pts[rec.pts.length-1];if(!l||dist(l,ll)>=5){rec.pts.push([ll[0],ll[1],Date.now()]);if(rec.pts.length%10===0){S.rec=rec;save()}drawLine()}}
  if(t){const nx=nextPt();
   if(nx&&dist(ll,nx.ll)<=S.cfg.radius){const now=Date.now();t.run.done[t.run.dir][nx.id]=now;if(rec)rec.hits.push({l:labels(t)[nx.id],t:now});save();drawMap();
    if(nx.action&&!t.run.act[nx.id])modal(`<h2>${labels(t)[nx.id]} BATIDO ✔</h2><p>${esc(nx.name)}</p><p style="color:var(--amber)">AÇÃO NESTE PONTO:</p><p style="font-size:16px">${esc(nx.action)}</p><div class="row"><button class="b pri" onclick="actDone('${nx.id}')">CUMPRIDO</button><button class="b" onclick="closeModal()">DEPOIS</button></div>`),navigator.vibrate&&navigator.vibrate([300,100,300]);
@@ -411,11 +443,12 @@ function onPos(ll,acc){
 }
 $('#bfol').onclick=e=>{follow=!follow;e.target.classList.toggle('on',follow);if(follow){startGps();if(me)map.easeTo({center:me,zoom:Math.max(map.getZoom(),16)})}};
 $('#bfit').onclick=fit;
-$('#brec').onclick=()=>{const t=T();if(!t)return toast('Abra uma trilha','warn');
- if(!rec){startGps();rec={trail:t.id,start:Date.now(),pts:[],hits:[]};S.rec=rec;save();renderAll();toast('GRAVANDO TRILHA','warn')}
+$('#brec').onclick=()=>{const t=T();
+ if(!rec){startGps();rec={trail:t?t.id:null,start:Date.now(),pts:[],hits:[]};S.rec=rec;save();renderAll();toast(t?'GRAVANDO TRILHA':'GRAVANDO CAMINHADA','warn')}
  else{if(!confirm('Parar a gravação e salvar?'))return;const tr=S.trails.find(x=>x.id===rec.trail);
-  if(tr&&rec.pts.length>1){tr.tracks.push({id:uid(),start:rec.start,end:Date.now(),pts:rec.pts,hits:rec.hits,dir:tr.run.dir})}
-  rec=null;S.rec=null;save();drawLine();renderAll();if(tr)report(tr.id)}};
+  if(rec.pts.length>1){const a={id:uid(),name:(tr?tr.name:'Caminhada')+' · '+new Date(rec.start).toLocaleDateString('pt-BR'),trailId:tr?tr.id:null,trail:tr?tr.name:'',start:rec.start,end:Date.now(),pts:rec.pts,hits:rec.hits,dir:tr?tr.run.dir:'ida',photos:[],rev:1};
+   S.acts.push(a);rec=null;S.rec=null;save();drawLine();renderAll();pushSoon();actDetail(a.id)}
+  else{rec=null;S.rec=null;save();drawLine();renderAll();toast('Gravação muito curta, descartada','warn')}}};
 
 // ================= EMERGÊNCIA =================
 const OVP=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
@@ -482,6 +515,107 @@ $('#lvCopy').onclick=()=>{const u=liveUrl();if(!u)return toast('Ligue o comparti
 $('#lvNew').onclick=()=>{if(!confirm('Gerar novo link? O link antigo deixa de funcionar.'))return;const L=LV();if(window.FB_URL&&L.id)fetch(`${FB_URL}/live/${L.id}.json`,{method:'DELETE'}).catch(()=>{});L.id=newId();L.sos=null;lastTrk=null;save();if(L.on)liveSend(true);renderLive()};
 setInterval(()=>liveSend(false),5000);
 
+// ================= CONTA, NUVEM E PERFIL =================
+const FBK=()=>window.FB_KEY;
+async function authCall(ep,body){const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:${ep}?key=${FBK()}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error((j.error&&j.error.message)||'ERRO');return j}
+const authMsg=m=>{const k=String(m).split(' ')[0];return({EMAIL_EXISTS:'Este e-mail já tem conta. Toque em "Já tenho conta".',INVALID_LOGIN_CREDENTIALS:'E-mail ou senha incorretos.',EMAIL_NOT_FOUND:'E-mail não cadastrado.',INVALID_PASSWORD:'Senha incorreta.',WEAK_PASSWORD:'Senha fraca: use 6 ou mais caracteres.',INVALID_EMAIL:'E-mail inválido.',MISSING_PASSWORD:'Digite a senha.',TOO_MANY_ATTEMPTS_TRY_LATER:'Muitas tentativas. Tente de novo em alguns minutos.',OPERATION_NOT_ALLOWED:'Login por e-mail desativado no servidor.'})[k]||'Não foi possível concluir ('+k+').'};
+function setUser(j){S.user={uid:j.localId,email:j.email,idToken:j.idToken,refresh:j.refreshToken,exp:Date.now()+(+j.expiresIn-60)*1000};save()}
+async function token(){const u=S.user;if(!u)return null;if(Date.now()<u.exp)return u.idToken;
+ const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${FBK()}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(u.refresh)});
+ const j=await r.json();if(!r.ok)throw new Error('SESSAO');u.idToken=j.id_token;u.refresh=j.refresh_token;u.exp=Date.now()+(+j.expires_in-60)*1000;save();return u.idToken}
+async function dbu(path,method='GET',body){const t=await token();const r=await fetch(`${FB_URL}/users/${S.user.uid}/${path}.json?auth=${t}`,{method,body:body===undefined?undefined:JSON.stringify(body)});if(!r.ok)throw new Error('DB '+r.status);return r.json()}
+
+const core=t=>JSON.stringify([t.name,t.desc||'',t.pts,t.hz,t.emerg||null]);
+const r5=n=>Math.round(n*1e5)/1e5;
+const packAct=a=>({id:a.id,name:a.name,trailId:a.trailId||'',trail:a.trail||'',start:a.start,end:a.end,dir:a.dir||'ida',pts:a.pts.map(p=>[r5(p[0]),r5(p[1]),p[2]]),hits:a.hits||[],photos:a.photos||[],rev:a.rev||1});
+const unpackAct=a=>({...a,trailId:a.trailId||null,pts:a.pts||[],hits:a.hits||[],photos:a.photos||[],sh:a.rev||1});
+const profCore=()=>({name:S.profile.name||'',bio:S.profile.bio||'',photo:S.profile.photo||'',cover:S.profile.cover||'',rev:S.profile.rev||1});
+let pushing=false,syncErr='',pushT=null,syncTimer=null;
+function startSync(){if(!syncTimer){syncTimer=setInterval(pushChanges,20000);addEventListener('online',pushChanges)}}
+const pushSoon=()=>{clearTimeout(pushT);pushT=setTimeout(pushChanges,1500)};
+async function pushChanges(){if(!S.user||!window.FB_URL||pushing||!navigator.onLine)return;pushing=true;try{
+ for(const id of S.delT.slice()){await dbu('trails/'+id,'DELETE');S.delT=S.delT.filter(x=>x!==id)}
+ for(const id of S.delA.slice()){await dbu('acts/'+id,'DELETE');S.delA=S.delA.filter(x=>x!==id)}
+ for(const t of S.trails){if(t.demo)continue;const h=core(t);if(!t.sync||t.sync.hash!==h){const upd=Date.now();await dbu('trails/'+t.id,'PUT',{name:t.name,desc:t.desc||'',pts:t.pts,hz:t.hz,emerg:t.emerg||null,upd});t.sync={hash:h,upd}}}
+ for(const a of S.acts){if(a.sh!==(a.rev||1)){await dbu('acts/'+a.id,'PUT',packAct(a));a.sh=a.rev||1}}
+ if(S.profile.name||S.profile.bio||S.profile.photo||S.profile.cover){if(S.profSh!==(S.profile.rev||1)){await dbu('profile','PUT',profCore());S.profSh=S.profile.rev||1}}
+ S.syncAt=Date.now();syncErr=''}catch(e){syncErr=e.message==='SESSAO'?'Sessão expirada. Entre de novo.':'Sem conexão com a nuvem'}finally{pushing=false;save();if(tab==='perfil')renderProfile()}}
+async function syncAll(){if(!S.user||!window.FB_URL)return;try{
+ const [rt,ra,rp]=await Promise.all([dbu('trails'),dbu('acts'),dbu('profile')]);
+ const R=rt||{};
+ if(Object.keys(R).length)S.trails=S.trails.filter(t=>!t.demo);
+ for(const id in R){if(S.delT.includes(id))continue;const r=R[id],l=S.trails.find(t=>t.id===id);
+  if(!l){const t=newTrail(r.name,r.desc||'');t.id=id;t.pts=r.pts||[];t.hz=r.hz||[];if(r.emerg)t.emerg=r.emerg;t.sync={hash:core(t),upd:r.upd||0};S.trails.push(t)}
+  else if((r.upd||0)>(l.sync?l.sync.upd:0)&&l.sync&&core(l)===l.sync.hash){l.name=r.name;l.desc=r.desc||'';l.pts=r.pts||[];l.hz=r.hz||[];l.emerg=r.emerg||undefined;l.sync={hash:core(l),upd:r.upd}}}
+ const A=ra||{};for(const id in A){if(S.delA.includes(id))continue;if(!S.acts.find(a=>a.id===id))S.acts.push(unpackAct(A[id]))}
+ if(rp&&(rp.rev||1)>(S.profile.rev||0)){S.profile={name:rp.name||'',bio:rp.bio||'',photo:rp.photo||'',cover:rp.cover||'',rev:rp.rev||1};S.profSh=S.profile.rev}
+ save();await pushChanges();if(!T()&&S.trails.length)S.cur=S.trails[0].id;save();renderAv();if(tab==='perfil')renderProfile();if(tab==='trilhas')renderTrails()
+}catch(e){syncErr=e.message==='SESSAO'?'Sessão expirada. Entre de novo.':'Sem conexão com a nuvem';if(tab==='perfil')renderProfile()}}
+
+function renderAv(){const b=$('#avBtn'),p=S.profile;if(p.photo){b.style.backgroundImage=`url(${p.photo})`;b.textContent=''}else{b.style.backgroundImage='';b.textContent=((p.name||(S.user&&S.user.email)||'·')[0]||'·').toUpperCase()}}
+$('#avBtn').onclick=e=>{e.stopPropagation();const had=document.querySelector('.pop.fx');closePop();if(had)return;
+ const d=document.createElement('div');d.className='pop fx';
+ d.innerHTML=(S.user?`<div class="who">${esc(S.user.email)}</div>`:'<div class="who">Sem conta neste aparelho</div>')+'<button class="mi" onclick="closePop();go(\'perfil\')">Meu perfil</button>'+(S.user?'<button class="mi" onclick="closePop();syncNow()">Sincronizar agora</button><button class="mi red" onclick="closePop();logout()">Sair da conta</button>':'<button class="mi" onclick="closePop();loginUI(\'in\')">Entrar</button><button class="mi" onclick="closePop();loginUI(\'up\')">Criar conta</button>');
+ document.body.appendChild(d)};
+function loginUI(mode){modal(`<h2>▌${mode==='up'?'CRIAR CONTA':'ENTRAR'}</h2><p style="color:var(--dim);font-size:12px;line-height:1.5">Suas trilhas e atividades ficam salvas na nuvem e voltam em qualquer aparelho.</p>
+ <label>E-MAIL</label><input id="lgE" type="email" autocomplete="email" autocapitalize="off" value="${esc((S.user&&S.user.email)||'')}">
+ <label>SENHA</label><input id="lgP" type="password" autocomplete="${mode==='up'?'new-password':'current-password'}" placeholder="${mode==='up'?'mínimo 6 caracteres':''}">
+ <p id="lgM" style="color:#ff7a66;min-height:20px;font-size:13px"></p>
+ <div class="row"><button class="b pri" id="lgGo" onclick="doLogin('${mode}')">${mode==='up'?'CRIAR CONTA':'ENTRAR'}</button><button class="b" onclick="loginUI('${mode==='up'?'in':'up'}')">${mode==='up'?'Já tenho conta':'Criar conta'}</button><button class="b" onclick="closeModal()">CANCELAR</button></div>${mode==='in'?'<button class="mi" onclick="resetPw()">Esqueci a senha</button>':''}`)}
+async function doLogin(mode){const m=$('#lgM'),e=$('#lgE').value.trim(),p=$('#lgP').value;if(!window.FB_KEY)return m.textContent='Servidor não configurado.';if(!e||!p)return m.textContent='Digite e-mail e senha.';
+ $('#lgGo').disabled=true;m.style.color='var(--dim)';m.textContent='Aguarde…';
+ try{const j=await authCall(mode==='up'?'signUp':'signInWithPassword',{email:e,password:p,returnSecureToken:true});setUser({...j,email:j.email||e});startSync();closeModal();toast(mode==='up'?'CONTA CRIADA':'BEM-VINDO','warn');await syncAll();go('perfil')}
+ catch(err){m.style.color='#ff7a66';m.textContent=authMsg(err.message);$('#lgGo').disabled=false}}
+async function resetPw(){const m=$('#lgM'),e=$('#lgE').value.trim();if(!e)return m.textContent='Digite seu e-mail acima.';m.style.color='var(--dim)';m.textContent='Enviando…';
+ try{await authCall('sendOobCode',{requestType:'PASSWORD_RESET',email:e});m.style.color='var(--ok)';m.textContent='Enviamos um e-mail para redefinir a senha. Veja também o spam.'}catch(err){m.style.color='#ff7a66';m.textContent=authMsg(err.message)}}
+function logout(){if(!confirm('Sair da conta? Seus dados continuam neste aparelho e na nuvem.'))return;S.user=null;S.profSh=null;S.trails.forEach(t=>delete t.sync);S.acts.forEach(a=>delete a.sh);S.delT=[];S.delA=[];save();renderAv();if(tab==='perfil')renderProfile();toast('VOCÊ SAIU','warn')}
+async function syncNow(){toast('SINCRONIZANDO…','warn');await syncAll();toast(syncErr?esc(syncErr):'TUDO SINCRONIZADO','warn')}
+
+function routeSvg(pts,w,h,pad){pad=pad||8;if(!pts||pts.length<2)return`<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%"></svg>`;
+ const step=Math.max(1,Math.floor(pts.length/300)),q=pts.filter((_,i)=>i%step===0||i===pts.length-1);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;const k=Math.cos(rad(q[0][1]));
+ q.forEach(p=>{const x=p[0]*k,y=p[1];x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)});
+ const sw=(x1-x0)||1e-6,sh=(y1-y0)||1e-6,sc=Math.min((w-2*pad)/sw,(h-2*pad)/sh),ox=(w-sw*sc)/2,oy=(h-sh*sc)/2;
+ const P=q.map(p=>[(ox+(p[0]*k-x0)*sc).toFixed(1),(h-(oy+(p[1]-y0)*sc)).toFixed(1)]);
+ return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%"><polyline points="${P.map(z=>z.join(',')).join(' ')}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${P[0][0]}" cy="${P[0][1]}" r="4.5" fill="#9bb05a"/><circle cx="${P[P.length-1][0]}" cy="${P[P.length-1][1]}" r="4.5" fill="#fff"/></svg>`}
+const actStats=a=>{const d=pathLen(a.pts),ms=a.end-a.start;return{d,ms,pace:ms/60000/((d/1000)||1)}};
+function actCard(a){const k=actStats(a);return `<div class="ac" onclick="actDetail('${a.id}')"><div class="mini">${routeSvg(a.pts,96,72,6)}</div><div style="min-width:0"><h3>${esc(a.name)}</h3><div class="m"><b>${fmtD(k.d)}</b> · ${fmtT(k.ms)}<br>${new Date(a.start).toLocaleDateString('pt-BR')} ${hhmm(a.start)}${a.photos&&a.photos.length?' · '+a.photos.length+' foto(s)':''}</div></div></div>`}
+function actDetail(id){const a=S.acts.find(x=>x.id===id);if(!a)return;const k=actStats(a);
+ modal(`<h2>${esc(a.name)}</h2><div style="height:190px;background:#0d0d0d;border-radius:8px;overflow:hidden">${routeSvg(a.pts,320,190,14)}</div>
+ <div class="stats" style="margin:10px 0"><div><b>${fmtD(k.d)}</b><small>DISTÂNCIA</small></div><div><b>${fmtT(k.ms)}</b><small>TEMPO</small></div><div><b>${k.pace.toFixed(1)}</b><small>MIN/KM</small></div><div><b>${(a.hits||[]).length}</b><small>PONTOS</small></div></div>
+ <p style="color:var(--dim)">${new Date(a.start).toLocaleDateString('pt-BR')} · ${hhmm(a.start)}–${hhmm(a.end)}${a.trail?' · '+esc(a.trail)+(a.dir==='volta'?' (volta)':''):''}</p>
+ ${(a.hits||[]).length?`<p style="font-size:12px;color:var(--dim)">${a.hits.map(h=>`${esc(h.l)} ${hhmm(h.t)}`).join(' · ')}</p>`:''}
+ ${a.photos&&a.photos.length?`<div class="ph">${a.photos.map((f,i)=>`<img src="${f}" onclick="delPhoto('${id}',${i})">`).join('')}</div><p style="font-size:11px;color:var(--dim)">Toque numa foto para removê-la.</p>`:''}
+ <div class="row"><button class="b sm pri" onclick="addPhoto('${id}')">+ FOTO</button><button class="b sm" onclick="renameAct('${id}')">RENOMEAR</button><button class="b sm" onclick="exportAct('${id}')">GPX</button><button class="b red sm" onclick="delAct('${id}')">APAGAR</button><button class="b sm" onclick="closeModal()">FECHAR</button></div>`)}
+function bump(a){a.rev=(a.rev||1)+1;save();pushSoon()}
+function renameAct(id){const a=S.acts.find(x=>x.id===id),n=prompt('Nome da atividade:',a.name);if(n&&n.trim()){a.name=n.trim();bump(a);actDetail(id);if(tab==='perfil')renderProfile()}}
+function delAct(id){if(!confirm('Apagar esta atividade?'))return;S.acts=S.acts.filter(a=>a.id!==id);S.delA.push(id);save();pushSoon();closeModal();if(tab==='perfil')renderProfile()}
+function delPhoto(id,i){if(!confirm('Remover esta foto?'))return;const a=S.acts.find(x=>x.id===id);a.photos.splice(i,1);bump(a);actDetail(id)}
+async function imgData(file,max,q){const bm=await createImageBitmap(file);const sc=Math.min(1,max/Math.max(bm.width,bm.height));const c=document.createElement('canvas');c.width=Math.round(bm.width*sc);c.height=Math.round(bm.height*sc);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return c.toDataURL('image/jpeg',q)}
+let photoCb=null;$('#photoIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(f&&photoCb)try{await photoCb(f)}catch(err){toast('Não consegui abrir essa foto','bad')}};
+function pickPhoto(cb){photoCb=cb;$('#photoIn').click()}
+function addPhoto(id){const a=S.acts.find(x=>x.id===id);if((a.photos||[]).length>=4)return toast('Máximo de 4 fotos','warn');pickPhoto(async f=>{a.photos=a.photos||[];a.photos.push(await imgData(f,900,.72));bump(a);actDetail(id)})}
+
+let ptab='acts';
+function renderProfile(){const p=S.profile,v=$('#vPerfil'),A=S.acts.slice().sort((a,b)=>b.start-a.start);
+ let km=0,ms=0;A.forEach(a=>{const k=actStats(a);km+=k.d;ms+=k.ms});
+ const ph=[];A.forEach(a=>(a.photos||[]).forEach(f=>ph.push(f)));
+ const cover=p.cover?`<div style="background:url(${p.cover}) center/cover;height:100%"></div>`:ph.length?`<div class="mos">${ph.slice(0,4).map(f=>`<i style="background-image:url(${f})"></i>`).join('')}</div>`:'<div style="display:grid;place-items:center;height:100%"><img src="logo.png" style="height:90px;opacity:.25;mix-blend-mode:screen"></div>';
+ v.innerHTML=`<div class="cover">${cover}<button class="back" onclick="go(window._prev&&window._prev!=='perfil'?window._prev:'mapa')">◀ Voltar</button></div>
+ <div class="phead"><div class="avbig" style="${p.photo?`background-image:url(${p.photo})`:''}">${p.photo?'':esc(((p.name||(S.user&&S.user.email)||'·')[0]).toUpperCase())}</div><div style="min-width:0;padding-bottom:4px"><h2>${esc(p.name||'Seu nome')}</h2><small>${S.user?esc(S.user.email):'Sem conta neste aparelho'}</small></div></div>
+ ${p.bio?`<div class="pbio">${esc(p.bio)}</div>`:''}
+ <div class="row" style="padding:10px 14px 0;margin:0"><button class="b sm pri" onclick="editProfile()">EDITAR PERFIL</button>${S.user?'<button class="b sm" onclick="syncNow()">SINCRONIZAR</button><button class="b sm red" onclick="logout()">SAIR</button>':''}</div>
+ ${S.user?`<div style="padding:8px 14px 0;font-size:11px;color:${syncErr?'#ff7a66':'var(--dim)'}">☁ ${syncErr?esc(syncErr):S.syncAt?'Salvo na nuvem às '+hhmm(S.syncAt):'Sincronizando…'}</div>`:`<div class="banner"><b>Salve suas trilhas na nuvem.</b><br>Entre com seu e-mail para não perder trilhas e atividades e usá-las em outro aparelho.<div class="row"><button class="b pri sm" onclick="loginUI('in')">ENTRAR</button><button class="b sm" onclick="loginUI('up')">CRIAR CONTA</button></div></div>`}
+ <div class="stats"><div><b>${A.length}</b><small>ATIVIDADES</small></div><div><b>${(km/1000).toFixed(1)}</b><small>KM</small></div><div><b>${fmtT(ms)}</b><small>TEMPO</small></div><div><b>${S.trails.length}</b><small>TRILHAS</small></div></div>
+ <div class="ptabs"><button class="${ptab==='acts'?'on':''}" onclick="ptab='acts';renderProfile()">MINHAS ATIVIDADES</button><button class="${ptab==='trails'?'on':''}" onclick="ptab='trails';renderProfile()">MINHAS TRILHAS</button></div>
+ <div id="plist">${ptab==='acts'?(A.map(actCard).join('')||'<p style="color:var(--dim);line-height:1.5">Nenhuma atividade ainda. Grave uma trilha ou caminhada com o botão <b>REC</b> no mapa e ela aparece aqui.</p>'):(S.trails.map(t=>`<div class="ac" onclick="openT('${t.id}','mapa');setTimeout(fit,400)"><div class="mini">${routeSvg(t.pts.map(x=>x.ll),96,72,6)}</div><div style="min-width:0"><h3>${esc(t.name)}</h3><div class="m"><b>${fmtD(trailLen(t))}</b> · ${t.pts.length} pontos<br>${S.user?(t.sync&&t.sync.hash===core(t)?'☁ salva na nuvem':'☁ aguardando envio'):'só neste aparelho'}</div></div></div>`).join('')||'<p style="color:var(--dim)">Nenhuma trilha.</p>')}</div>`}
+function editProfile(){const p=S.profile;
+ modal(`<h2>▌EDITAR PERFIL</h2><label>NOME</label><input id="epN" value="${esc(p.name||'')}" maxlength="40"><label>BIO</label><textarea id="epB" maxlength="200" placeholder="Fale um pouco sobre você e suas trilhas">${esc(p.bio||'')}</textarea>
+ <div class="row"><button class="b sm" onclick="setImg('photo')">FOTO DE PERFIL</button><button class="b sm" onclick="setImg('cover')">FOTO DE CAPA</button>${p.cover?'<button class="b sm red" onclick="rmCover()">REMOVER CAPA</button>':''}</div>
+ <div class="row"><button class="b pri" onclick="saveProfile()">SALVAR</button><button class="b" onclick="closeModal()">CANCELAR</button></div>`)}
+function saveProfile(){const p=S.profile;p.name=$('#epN').value.trim();p.bio=$('#epB').value.trim();p.rev=(p.rev||1)+1;save();pushSoon();closeModal();renderAv();renderProfile()}
+function setImg(k){const n=$('#epN')?$('#epN').value:null,b=$('#epB')?$('#epB').value:null;pickPhoto(async f=>{S.profile[k]=await imgData(f,k==='photo'?300:1000,k==='photo'?.8:.72);if(n!==null){S.profile.name=n.trim();S.profile.bio=b.trim()}S.profile.rev=(S.profile.rev||1)+1;save();pushSoon();renderAv();editProfile();renderProfile()})}
+function rmCover(){S.profile.cover='';S.profile.rev=(S.profile.rev||1)+1;save();pushSoon();editProfile();renderProfile()}
+
 // ================= SOS =================
 $('#bsos').onclick=()=>{
  if(!me){startGps();const t0=T(),r0=(t0&&t0.pts[0]&&t0.pts[0].ll)||[map.getCenter().lng,map.getCenter().lat];return modal(`<h2 style="color:#ff7a66">▌SOS</h2><p>Sem posição ainda. Ligando o GPS… aguarde e toque SOS de novo (céu aberto). Distâncias abaixo são a partir do início da trilha.</p>${emSection(r0)}<div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
@@ -494,7 +628,7 @@ function sosCopy(){navigator.clipboard&&navigator.clipboard.writeText(window._so
 
 // ================= TRILHAS (lista, briefing, relatório) =================
 function renderTrails(){
- $('#tlist').innerHTML=S.trails.map(t=>{const objs=t.pts.filter(p=>p.type==='obj').length,last=t.tracks[t.tracks.length-1];
+ $('#tlist').innerHTML=S.trails.map(t=>{const objs=t.pts.filter(p=>p.type==='obj').length,last=lastAct(t.id);
   return `<div class="card tcard ${t.id===S.cur?'cur':''}"><button class="dots" aria-label="Mais opções" onclick="trailMenu('${t.id}',this)">⋮</button><h2>${esc(t.name)}${t.id===S.cur?' <span style="color:var(--amber);font-size:10px;letter-spacing:.1em">● NO MAPA</span>':''}</h2><div class="meta">${t.pts.length} pontos · ${objs} objetivos · ${fmtD(trailLen(t))} · ${t.hz.length} marcas${last?' · última: '+new Date(last.start).toLocaleDateString('pt-BR'):' · nunca feita'}</div>
   ${t.desc?`<p>${esc(t.desc)}</p>`:''}
   <div class="row"><button class="b pri sm" onclick="openT('${t.id}','mapa');setTimeout(fit,400)">ABRIR NO MAPA</button></div></div>`}).join('')||'<p style="color:var(--dim)">Nenhuma trilha. Crie a primeira.</p>'}
@@ -511,7 +645,7 @@ function newTrailFlow(){const name=prompt('Nome da trilha:');if(!name){return go
 $('#tnew').onclick=newTrailFlow;
 function renameT(id){const t=S.trails.find(x=>x.id===id),n=prompt('Novo nome da trilha:',t.name);if(n&&n.trim()){t.name=n.trim();save();renderTrails()}}
 function resetRun(id){if(!confirm('Zerar o progresso (pontos batidos) desta trilha?'))return;const t=S.trails.find(x=>x.id===id);t.run={dir:'ida',done:{ida:{},volta:{}},act:{}};save();renderTrails()}
-function delTrail(id){const t=S.trails.find(x=>x.id===id);if(!confirm(`Apagar "${t.name}" e suas gravações?`))return;S.trails=S.trails.filter(x=>x.id!==id);if(S.cur===id)S.cur=S.trails[0]?.id||null;save();renderTrails()}
+function delTrail(id){const t=S.trails.find(x=>x.id===id);if(!confirm(`Apagar "${t.name}" e suas gravações?`))return;S.trails=S.trails.filter(x=>x.id!==id);S.delT.push(id);if(S.cur===id)S.cur=S.trails[0]?.id||null;save();renderTrails()}
 function brief(id){const t=S.trails.find(x=>x.id===id);if(!t.emerg&&t.pts.length)findHospitals(t).then(()=>{if($('#modal').style.display==='flex'&&$('#modal h2')&&$('#modal h2').textContent.includes('MISSÃO'))brief(id)});const L=labels(t),objs=t.pts.filter(p=>p.action),dg=t.hz.filter(h=>h.kind==='danger'),wt=t.hz.filter(h=>h.kind==='water'),len=trailLen(t);
  modal(`<h2>▌ORDEM DE MISSÃO</h2><p style="font-size:16px;color:var(--txt)">${esc(t.name)}</p>${t.desc?`<p style="color:var(--dim)">${esc(t.desc)}</p>`:''}
  <p><b style="color:var(--amber)">DISTÂNCIA (reta entre pontos):</b> ${fmtD(len)} · ida e volta ${fmtD(len*2)}</p>
@@ -523,34 +657,15 @@ function brief(id){const t=S.trails.find(x=>x.id===id);if(!t.emerg&&t.pts.length
  ${wt.length?`<p><b style="color:var(--cy)">ÁGUA:</b> ${wt.length} ponto(s) marcado(s)</p>`:''}
  <div class="row"><button class="b pri" onclick="startMission('${id}')">INICIAR MISSÃO</button><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
 function startMission(id){closeModal();openT(id,'mapa');startGps();setTimeout(fit,300)}
-function report(id){const t=S.trails.find(x=>x.id===id);
- modal(`<h2>▌RELATÓRIO — ${esc(t.name)}</h2>${t.tracks.length?t.tracks.slice().reverse().map(k=>{const d=pathLen(k.pts),ms=k.end-k.start;
-  return `<div class="card"><p><b style="color:var(--amber)">${new Date(k.start).toLocaleDateString('pt-BR')}</b> ${hhmm(k.start)}–${hhmm(k.end)} · ${k.dir==='volta'?'VOLTA':'IDA'}</p>
-  <p>Distância ${fmtD(d)} · tempo ${fmtT(ms)} · ritmo ${(ms/60000/(d/1000||1)).toFixed(1)} min/km</p>
-  ${k.hits.length?`<p>${k.hits.map(h=>`${h.l} ${hhmm(h.t)}`).join(' · ')}</p>`:''}
-  <div class="row"><button class="b sm" onclick="exportTrack('${t.id}','${k.id}')">GPX DO PERCURSO</button><button class="b red sm" onclick="delTrack('${t.id}','${k.id}')">APAGAR</button></div></div>`}).join(''):'<p>Nenhuma gravação ainda. Use o botão REC no mapa durante a trilha.</p>'}
- <div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
-function delTrack(tid,kid){if(!confirm('Apagar gravação?'))return;const t=S.trails.find(x=>x.id===tid);t.tracks=t.tracks.filter(k=>k.id!==kid);save();report(tid)}
-
-// ================= GPX / COMPARTILHAR / IMPORTAR =================
-const X=s=>String(s??'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
-const SYM={water:'Drinking Water',danger:'Danger Area',shelter:'Campground',exit:'Exit'};
-function gpxTrail(t){const L=labels(t);
- return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="TRILHA NAV" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${X(t.name)}</name></metadata>\n`+
- t.pts.map(p=>`<wpt lat="${p.ll[1]}" lon="${p.ll[0]}"><name>${X(L[p.id]+' '+p.name)}</name><desc>${X(p.action)}</desc><sym>Flag, Blue</sym></wpt>`).join('\n')+'\n'+
- t.hz.map(h=>`<wpt lat="${h.ll[1]}" lon="${h.ll[0]}"><name>${X(HK[h.kind][1]+' '+h.note)}</name><sym>${SYM[h.kind]}</sym></wpt>`).join('\n')+
- `\n<trk><name>${X(t.name)}</name><trkseg>\n${t.pts.map(p=>`<trkpt lat="${p.ll[1]}" lon="${p.ll[0]}"></trkpt>`).join('\n')}\n</trkseg></trk>\n</gpx>`}
-function gpxTrack(t,k){return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="TRILHA NAV" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>${X(t.name)} ${new Date(k.start).toLocaleDateString('pt-BR')}</name><trkseg>\n${k.pts.map(p=>`<trkpt lat="${p[1]}" lon="${p[0]}"><time>${new Date(p[2]).toISOString()}</time></trkpt>`).join('\n')}\n</trkseg></trk>\n</gpx>`}
-async function outFile(name,text,mime,share){const f=new File([text],name,{type:mime});
- if(share&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name});return}catch(e){if(e.name==='AbortError')return}}
- const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
-const safe=s=>s.replace(/[^\w\-]+/g,'_');
+function lastAct(tid){const a=S.acts.filter(x=>x.trailId===tid).sort((x,y)=>x.start-y.start);return a[a.length-1]}
+function report(id){const t=S.trails.find(x=>x.id===id),L=S.acts.filter(a=>a.trailId===id).sort((a,b)=>b.start-a.start);
+ modal(`<h2>▌ATIVIDADES — ${esc(t.name)}</h2>${L.length?L.map(actCard).join(''):'<p>Nenhuma gravação ainda. Use o botão REC no mapa durante a trilha.</p>'}<div class="row"><button class="b" onclick="closeModal()">FECHAR</button></div>`)}
 function exportGpx(id,share){const t=S.trails.find(x=>x.id===id);if(t.pts.length<2)return toast('Marque ao menos 2 pontos','warn');outFile(safe(t.name)+'.gpx',gpxTrail(t),'application/gpx+xml',share)}
-function exportTrack(tid,kid){const t=S.trails.find(x=>x.id===tid),k=t.tracks.find(x=>x.id===kid);outFile(safe(t.name)+'_percurso.gpx',gpxTrack(t,k),'application/gpx+xml',0)}
+function exportAct(id){const a=S.acts.find(x=>x.id===id);outFile(safe(a.name)+'.gpx',gpxTrack({name:a.name},a),'application/gpx+xml',0)}
 $('#timp').onclick=()=>$('#file').click();$('#bkimp').onclick=()=>$('#file').click();
 $('#file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const txt=await f.text();
  try{if(/\.gpx$/i.test(f.name)||txt.trim().startsWith('<'))importGpx(txt,f.name.replace(/\.gpx$/i,''));else importJson(JSON.parse(txt))}catch(err){toast('Arquivo inválido','bad')}};
-function importJson(j){const arr=j.trails||[j];arr.forEach(t=>{if(!t.pts)return;t.id=uid();t.run={dir:'ida',done:{ida:{},volta:{}},act:{}};t.tracks=t.tracks||[];S.trails.push(t)});save();renderTrails();toast('IMPORTADO','warn')}
+function importJson(j){const arr=j.trails||[j];arr.forEach(t=>{if(!t.pts)return;t.id=uid();t.run={dir:'ida',done:{ida:{},volta:{}},act:{}};delete t.tracks;delete t.sync;S.trails.push(t)});(j.acts||[]).forEach(a=>{if(!S.acts.find(x=>x.id===a.id)){a.rev=1;delete a.sh;S.acts.push(a)}});save();renderTrails();toast('IMPORTADO','warn')}
 function importGpx(txt,name){const d=new DOMParser().parseFromString(txt,'application/xml');
  const g=n=>[...d.getElementsByTagName(n)].map(e=>[+e.getAttribute('lon'),+e.getAttribute('lat'),e.getElementsByTagName('name')[0]?.textContent||'']);
  let w=g('wpt'),line=g('rtept');if(!line.length)line=g('trkpt');let pts=[];
@@ -558,7 +673,7 @@ function importGpx(txt,name){const d=new DOMParser().parseFromString(txt,'applic
  if(!pts.length)return toast('GPX sem pontos','bad');
  const t=newTrail(name||'Importada','Importada de GPX',pts.map((p,i)=>[i===0?'start':i===pts.length-1?'end':'wp',p[2]||'Ponto '+(i+1),'',[p[0],p[1]]]));
  S.trails.push(t);save();renderTrails();toast(`IMPORTADA: ${pts.length} pontos`,'warn')}
-$('#bkexp').onclick=()=>outFile('trilhas_backup.trilha',JSON.stringify({trails:S.trails}),'application/json',1);
+$('#bkexp').onclick=()=>outFile('trilhas_backup.trilha',JSON.stringify({trails:S.trails,acts:S.acts}),'application/json',1);
 
 // ================= AJUSTES / OFFLINE =================
 let settingVenom=false;
@@ -591,6 +706,8 @@ addEventListener('resize',layoutTop);
 if(rec){startGps()}
 if(LV().on){startGps();wake(true)}
 if(S.trails.length&&!T())S.cur=S.trails[0].id;
+renderAv();
+if(S.user){startSync();syncAll()}
 go('mapa');
 setTimeout(()=>{const e=$('#splash');e.style.opacity=0;setTimeout(()=>e.remove(),700)},1500);
 </script></body></html>
